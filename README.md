@@ -11,9 +11,9 @@ These instructions have been tested on Windows and Mac.  If you are using a vari
 instructions for Mac should apply except possibly for the "screen" terminal emulator program.  At
 a minimum you need to select a Linux terminal emulation program and open the USB TTY with it.
 
-This project was initially cloned from the OCP Vulcan project then refactored to split the source
-code into multiple files to ease readability and management.  Primary reason for cloning that
-project was to re-use the USB serial code that was working, plus the simulated EEPROM and CLI.
+This project was initially cloned from the OCP Xavier project.  Primary reason for cloning that
+project was to re-use the USB serial code that was working, plus the simulated EEPROM and CLI 
+as well as the FRU EEPROM code.
 
 The project is built using the PlatformIO extension for Visual Studio Code.  An ATMEL-ICE was
 used to debug the code on the board and can be used to program the binary using Microchip Studio.
@@ -50,7 +50,7 @@ Follow the Wiring and Terminal Instructions below to get started using the TTF b
 The board firmware prompt is "cmd>" and when you see that, you can enter "help<ENTER>" for help on the
 available commands.
 
-The purpose of the board is to provide debug capabilities for NIC 3.0 cards.  
+The purpose of the board is to provide support for thermal testing of NIC 3.0 cards.  
 
 Development Environment Setup
 =============================
@@ -77,19 +77,19 @@ cannot and have not been tested.
     Mac:      <home> = Users/<username>
 
 4. Log into GitHub.com using your own credentials then clone this repository: 
-    bentprong/ocp_vulcan 
+    bentprong/ocp_ttf 
     
-into your Projects folder.
+into your Projects folder.  Eg, <home>/Documents/Projects/ocp_ttf
 
     GitHub Requirements:
-        a. SSH key generated and installed on this computer for YOU
+        a. SSH key generated and installed on this (your) computer for YOU
         b. SSH key for YOU installed in YOUR GitHub.com account
 
 5. In VSC, choose File | Open Folder... and navigate to <home>/<Projects>/ocp_ttf then highlight that, and
 click Select Folder.
 
-6. In VSC, click the checkmark in the blue bar at the bottom to build.  This should install necessary files 
-and tools.  It may take quite a bit of time.
+6. In VSC, click the checkmark in the blue bar at the bottom to build.  This should install necessary files, 
+libraries and tools.  It may take quite a bit of time.
 
 7. In the repo folder platformio, open the README file and follow the instructions to configure PIO for the
 TTF board.  There are 2 steps to this process explained in the README.
@@ -102,7 +102,7 @@ updated define the pinouts for the TTF project.  You have been warned!
 
 Wiring Instructions
 ===================
-1. Connect TTF board to ATMEL-ICE and connect ATMEL-ICE to computer (debug only)
+1. Connect TTF board to ATMEL-ICE and connect ATMEL-ICE to computer
 2. Connect TTF board USB-C port to computer USB port using a DATA CABLE (not a charging only cable).
 3. Windows only: If not already installed, install a terminal emulator program such as TeraTerm.
  
