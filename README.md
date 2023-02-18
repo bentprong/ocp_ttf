@@ -1,8 +1,8 @@
-# ocp_vulcan
-Dell OCP Xavier NIC 3.0 Test Board
+# ocp_ttf
+Dell OCP NIC 3.0 Thermal Test Fixture
 Written by Richard Lewis rlewis@astlenterprises.com for Fusion Manufacturing Services 
    rick@fmspcb.com is my email address at Fusion.
-Posted February 18, 2023 at https://github.com/bentprong/ocp_xavier
+Posted February 18, 2023 at https://github.com/bentprong/ocp_ttf
 Initial Firmware Release: v1.0.4
 
 Overview
@@ -45,7 +45,7 @@ In this document, <ENTER> means press the keyboard Enter key.
 
 Getting Started
 ===============
-Follow the Wiring and Terminal Instructions below to get started using the Xavier board.
+Follow the Wiring and Terminal Instructions below to get started using the TTF board.
 
 The board firmware prompt is "cmd>" and when you see that, you can enter "help<ENTER>" for help on the
 available commands.
@@ -85,28 +85,28 @@ into your Projects folder.
         a. SSH key generated and installed on this computer for YOU
         b. SSH key for YOU installed in YOUR GitHub.com account
 
-5. In VSC, choose File | Open Folder... and navigate to <home>/<Projects>/ocp_xavier then highlight that, and
+5. In VSC, choose File | Open Folder... and navigate to <home>/<Projects>/ocp_ttf then highlight that, and
 click Select Folder.
 
 6. In VSC, click the checkmark in the blue bar at the bottom to build.  This should install necessary files 
 and tools.  It may take quite a bit of time.
 
 7. In the repo folder platformio, open the README file and follow the instructions to configure PIO for the
-Xavier board.  There are 2 steps to this process explained in the README.
+TTF board.  There are 2 steps to this process explained in the README.
 
 --------------------------------------------------------------------------------------------------
 ** FLASHING NOTE ** Failure to exactly follow the instructions in the README in step #7 will
 result in the code not building correctly!   That is because the files that must be copied or
-updated define the pinouts for the Xavier project.  You have been warned!
+updated define the pinouts for the TTF project.  You have been warned!
 --------------------------------------------------------------------------------------------------
 
 Wiring Instructions
 ===================
-1. Connect Xavier board to ATMEL-ICE and connect ATMEL-ICE to computer (debug only)
-2. Connect Xavier board USB-C port to computer USB port using a DATA CABLE (not a charging only cable).
+1. Connect TTF board to ATMEL-ICE and connect ATMEL-ICE to computer (debug only)
+2. Connect TTF board USB-C port to computer USB port using a DATA CABLE (not a charging only cable).
 3. Windows only: If not already installed, install a terminal emulator program such as TeraTerm.
  
-LED BEHAVIOR: Once the Xavier board has been powered up, there will be 2 LEDs that are on solid: one
+LED BEHAVIOR: Once the TTF board has been powered up, there will be 2 LEDs that are on solid: one
 for 3.3V and one for 12V.  These 2 LEDs are near the Power connector.  If either is off, a hardware issue
 exists in one or both power supplies.  These 2 LEDs should always be on.
 
@@ -139,13 +139,13 @@ Binary Executable Instructions
 ==============================
 In VSC, click the checkmark in the blue line at the bottom to build a firmware release.  If no problems
 are reported (there should be none), the executable is located here:
-    <home>/Projects/ocp-xavier/.pio/build/samd21g18a/firmware.bin
+    <home>/Projects/ocp-ttf/.pio/build/samd21g18a/firmware.bin
 
 Note that in this same location is also the firmware.elf file which is the debug version of firmware.
 
-Use any flash utility such as Microchip Studio to erase and burn this .bin file into the Xavier board.
+Use any flash utility such as Microchip Studio to erase and burn this .bin file into the TTF board.
 
-NOTE: PIO "upload" does not work, because there is intentionally no bootloader on the Xavier board.
+NOTE: PIO "upload" does not work, because there is intentionally no bootloader on the TTF board.
 
 Microchip Studio
 ----------------
@@ -168,13 +168,13 @@ flash the firmware.  Close out VSC and Studio, then restart Studio.  The conflic
 Terminal Instructions
 =====================
 Windows: In TeraTerm, open a new serial connection on the new COM port and press ENTER. You should see
-the Xavier welcome message and Xavier prompt cmd> in the TeraTerm window.
+the TTF welcome message and TTF prompt cmd> in the TeraTerm window.
 
 Mac: Get a listing of TTYs like this:
     user@computer ~ % ls -l /dev/tty.usb*
     crw-rw-rw-  1 root  wheel    9,   2 Jan 17 14:02 /dev/tty.usbmodem146201 
 
-Enter "screen /dev/tty.usbmodem146201" and you should see the Xavier welcome message and Xavier 
+Enter "screen /dev/tty.usbmodem146201" and you should see the TTF welcome message and TTF 
 prompt cmd> in the terminal window.
 
 Linux (eg Ubuntu): You can install screen or minicom using apt.  For screen, use this command:
