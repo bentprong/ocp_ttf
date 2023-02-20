@@ -47,7 +47,7 @@ Getting Started
 ===============
 Follow the Wiring and Terminal Instructions below to get started using the TTF board.
 
-The board firmware prompt is "cmd>" and when you see that, you can enter "help<ENTER>" for help on the
+The board firmware prompt is "ttf>" and when you see that, you can enter "help<ENTER>" for help on the
 available commands.
 
 The purpose of the board is to provide support for thermal testing of NIC 3.0 cards.  
@@ -168,23 +168,28 @@ flash the firmware.  Close out VSC and Studio, then restart Studio.  The conflic
 Terminal Instructions
 =====================
 Windows: In TeraTerm, open a new serial connection on the new COM port and press ENTER. You should see
-the TTF welcome message and TTF prompt cmd> in the TeraTerm window.
+the TTF welcome message and TTF prompt ttf> in the TeraTerm window.  Hint: The description of the new
+COM port will include "OCP" if that COM port is assigned to the TTF board.
 
 Mac: Get a listing of TTYs like this:
     user@computer ~ % ls -l /dev/tty.usb*
     crw-rw-rw-  1 root  wheel    9,   2 Jan 17 14:02 /dev/tty.usbmodem146201 
 
-Enter "screen /dev/tty.usbmodem146201" and you should see the TTF welcome message and TTF 
-prompt cmd> in the terminal window.
+Enter "screen /dev/tty.usbmodem146201 115200" (or whatever the output of the ls command indicates)
+and you should see the TTF welcome message and TTF prompt ttf> in the terminal window.  While the
+baud rate of 115200 doesn't apply to serial over USB, it is required.
 
-Linux (eg Ubuntu): You can install screen or minicom using apt.  For screen, use this command:
-screen /dev/ttyUSB0 115200 if the connection is on ttyUSB0. Check the /dev directory for any
-matches to ttyUSB*.
+Linux (eg Ubuntu): You can install screen or minicom using apt.  For screen, use the ls command
+as shown in the Mac section above to find the USBn device, then enter the command:
+"screen /dev/ttyUSB0 115200" if the connection is on ttyUSB0.  For minicom, please search online
+for a tutorial on installation and usage.
 
-Known Issues
-============
-1. Some characters are lost sometimes in the serial terminal.  Workaround: execute the command again.
+Known Issue
+===========
+Some characters are lost sometimes in the serial terminal.  Workaround: execute the command again. The 
+frequency of occurence of this varies between operating systems and seems to be worse on Windows.
 
-Also, in GitHub.com, click on the Issue link next to <> Code to view any outstanding Issues.
+Importantly, in GitHub.com, click on the Issue link next to <> Code to view any outstanding Issues. All
+other issues are tracked in GitHub.
 
 

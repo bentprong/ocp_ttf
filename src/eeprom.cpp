@@ -196,8 +196,8 @@ int eepromCmd(int arg)
     time_t            t;
 
     // read the slot ID, which determines the FRU EEPROM I2C address
-    // NOTE: Default is for slot 1...
-    slot = digitalRead(OCP_SLOT_ID1) << 1 | digitalRead(OCP_SLOT_ID0);
+    // NOTE: Slot ID pins are tied to ground on TTF
+    slot = 0;
     if ( slot >= 0 && slot <= 3 )
       eepromI2CAddr = eepromAddresses[slot];
 

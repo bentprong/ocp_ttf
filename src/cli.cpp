@@ -9,7 +9,7 @@
 #include "commands.hpp"
 
 // Constant Data
-const char      cliPrompt[] = "cmd> ";
+const char      cliPrompt[] = "ttf> ";
 const int       promptLen = sizeof(cliPrompt);
 const char      hello[] = "Dell NIC 3.0 Thermal Test Fixture V";
 

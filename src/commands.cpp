@@ -23,31 +23,24 @@ extern EEPROM_data_t    EEPROMData;
 // 'pins' command. There is no other signficance to the order.
  const pin_mgt_t     staticPins[] = {
   {           OCP_SCAN_LD_N, INPUT_PIN,   "OCP_SCAN_LD_N"},
-  {         OCP_MAIN_PWR_EN, INPUT_PIN,   "OCP_MAIN_PWR_EN"},
+  {         OCP_MAIN_PWR_EN, IN_OUT_PIN,  "OCP_MAIN_PWR_EN"},
   {        OCP_SCAN_DATA_IN, OUTPUT_PIN,  "OCP_SCAN_DATA_IN"},
-  {           OCP_PRSNTB1_N, OUTPUT_PIN,  "OCP_PRSNTB1_N"},
-  {             PCIE_PRES_N, INPUT_PIN,   "PCIE_PRES_N"},
+  {           OCP_PRSNTB1_N, INPUT_PIN,  "OCP_PRSNTB1_N"},
+  {              P1_LINKA_N, INPUT_PIN,   "P1_LINKA_N"},
   {              SCAN_VER_0, INPUT_PIN,   "SCAN_VER_0"},
   {       OCP_SCAN_DATA_OUT, INPUT_PIN,   "OCP_SCAN_DATA_OUT"},
-  {          OCP_AUX_PWR_EN, INPUT_PIN,   "OCP_AUX_PWR_EN"},
-  {            NIC_PWR_GOOD, INPUT_PIN,   "jmp_NIC_PWR_GOOD"},  // jumpered see #define for details
+  {          OCP_AUX_PWR_EN, IN_OUT_PIN,  "OCP_AUX_PWR_EN"},
   {            OCP_PWRBRK_N, INPUT_PIN,   "OCP_PWRBRK_N"},
-  {              OCP_BIF0_N, INPUT_PIN,   "OCP_BIF0_N"},
-  {           OCP_PRSNTB3_N, OUTPUT_PIN,  "OCP_PRSNTB3_N"},
+  {           OCP_PRSNTB3_N, INPUT_PIN,  "OCP_PRSNTB3_N"},
   {              FAN_ON_AUX, INPUT_PIN,   "FAN_ON_AUX"},
-  {           OCP_SMB_RST_N, OUTPUT_PIN,  "OCP_SMB_RST_N"},
-  {           OCP_PRSNTB0_N, OUTPUT_PIN,  "OCP_PRSNTB0_N"},
-  {              OCP_BIF1_N, INPUT_PIN,   "OCP_BIF1_N"},
-  {            OCP_SLOT_ID0, INPUT_PIN,   "OCP_SLOT_ID0"},
-  {            OCP_SLOT_ID1, INPUT_PIN,   "OCP_SLOT_ID1"},
-  {           OCP_PRSNTB2_N, OUTPUT_PIN,  "OCP_PRSNTB2_N"},
+  {            P3_LED_ACT_N, INPUT_PIN,  "P3_LED_ACT_N"},
+  {           OCP_PRSNTB0_N, INPUT_PIN,  "OCP_PRSNTB0_N"},
+  {           OCP_PRSNTB2_N, INPUT_PIN,  "OCP_PRSNTB2_N"},
   {              SCAN_VER_1, INPUT_PIN,   "SCAN_VER_1"},
-  {             PHY_RESET_N, OUTPUT_PIN,  "PHY_RESET_N"},
-  {          RBT_ISOLATE_EN, OUTPUT_PIN,  "RBT_ISOLATE_EN"},
-  {              OCP_BIF2_N, INPUT_PIN,   "OCP_BIF2_N"},
   {              OCP_WAKE_N, INPUT_PIN,   "OCP_WAKE_N"},
   {               TEMP_WARN, INPUT_PIN,   "TEMP_WARN"},
   {               TEMP_CRIT, INPUT_PIN,   "TEMP_CRIT"},
+  {              LINK_ACT_2, INPUT_PIN,   "LINK_ACT_2"},
 };
 
 uint16_t      static_pin_count = sizeof(staticPins) / sizeof(pin_mgt_t);
@@ -122,7 +115,7 @@ int writeCmd(int arg)
         return(1);
     }    
 
-    if ( staticPins[index].pinFunc != OUTPUT_PIN )
+    if ( staticPins[index].pinFunc == INPUT_PIN )
     {
         terminalOut((char *) "Cannot write to an input pin! Use 'pins' command for help.");
         return(1);
@@ -141,6 +134,16 @@ int writeCmd(int arg)
     return(0);
 }
 
+char getPinChar(int index)
+{
+    if ( staticPins[index].pinFunc == INPUT_PIN )
+        return('I');
+    else if ( staticPins[index].pinFunc == OUTPUT_PIN )
+        return('O');
+    else
+        return('B');
+}
+
 // --------------------------------------------
 // pinCmd() - dump all I/O pins on terminal
 // --------------------------------------------
@@ -149,6 +152,7 @@ int pinCmd(int arg)
     int         count = static_pin_count;
     int         index = 0;
     uint8_t     pinNo;
+    char        ioChar1, ioChar2;
 
     terminalOut((char *) " #           Pin Name   I/O              #        Pin Name      I/O ");
     terminalOut((char *) "-------------------------------------------------------------------- ");
@@ -158,7 +162,7 @@ int pinCmd(int arg)
       if ( count == 1 )
       {
           sprintf(outBfr, "%2d %20s %c %d ", staticPins[index].pinNo, staticPins[index].name,
-                  staticPins[index].pinFunc == INPUT ? 'I' : 'O', pinStates[staticPins[index].pinNo]);
+                  getPinChar(index), pinStates[staticPins[index].pinNo]);
           terminalOut(outBfr);
           break;
       }
@@ -166,8 +170,8 @@ int pinCmd(int arg)
       {
           pinNo = staticPins[index].pinNo;
           sprintf(outBfr, "%2d %20s %c %d\t\t%2d %20s %c %d ", 
-                  pinNo, staticPins[index].name, staticPins[index].pinFunc == INPUT ? 'I' : 'O', pinStates[pinNo],
-                  staticPins[index+1].pinNo, staticPins[index+1].name, staticPins[index+1].pinFunc == INPUT ? 'I' : 'O',
+                  pinNo, staticPins[index].name, getPinChar(index), pinStates[pinNo],
+                  staticPins[index+1].pinNo, staticPins[index+1].name, getPinChar(index+1),
                   pinStates[staticPins[index+1].pinNo]);
           terminalOut(outBfr);
           count -= 2;
@@ -237,7 +241,7 @@ int statusCmd(int arg)
       displayLine(outBfr);
 
       CURSOR(3,57);
-      sprintf(outBfr, "BIF [2:0]      %u%u%u", pinStates[OCP_BIF2_N], pinStates[OCP_BIF1_N], pinStates[OCP_BIF0_N]);
+      sprintf(outBfr, "P1_LINK_A_N      %u", pinStates[P1_LINKA_N]);
       displayLine(outBfr);
 
       CURSOR(4,1);
@@ -253,7 +257,7 @@ int statusCmd(int arg)
       displayLine(outBfr);
 
       CURSOR(5,53);
-      sprintf(outBfr, "SLOT ID [1:0]       %u%u", pinStates[OCP_SLOT_ID1], pinStates[OCP_SLOT_ID0]);
+      sprintf(outBfr, "TP_LNKAC2         %u", pinStates[LINK_ACT_2]);
       displayLine(outBfr);
 
       CURSOR(6,1);
@@ -269,7 +273,7 @@ int statusCmd(int arg)
       displayLine(outBfr);      
 
       CURSOR(7,56);
-      sprintf(outBfr, "PCIE_PRES_N       %d", pinStates[PCIE_PRES_N]);
+      sprintf(outBfr, "OCP_PWRBRK_N       %d", pinStates[OCP_PWRBRK_N]);
       displayLine(outBfr);
 
       CURSOR(8,1);
@@ -281,16 +285,12 @@ int statusCmd(int arg)
       displayLine(outBfr);
 
       CURSOR(9,1);
-      sprintf(outBfr, "RBT_ISOLATE_EN    %d", pinStates[RBT_ISOLATE_EN]);
+      sprintf(outBfr, "P3_LED_ACT_N    %d", pinStates[P3_LED_ACT_N]);
       displayLine(outBfr);  
 
       CURSOR(9,57);
-      sprintf(outBfr, "OCP_PWRBRK_N     %d", pinStates[OCP_PWRBRK_N]);
+      sprintf(outBfr, "P3_LINKA_N     %d", pinStates[P3_LINKA_N]);
       displayLine(outBfr);
-
-      CURSOR(10,1);
-      sprintf(outBfr, "jmp_NIC_PWR_GOOD  %d", pinStates[NIC_PWR_GOOD]);
-      displayLine(outBfr);  
 
       CURSOR(24, 22);
       displayLine((char *) "Hit any key to exit this display");
