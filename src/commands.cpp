@@ -22,25 +22,27 @@ extern EEPROM_data_t    EEPROMData;
 // NOTE: The order of the entries in this table is the order they are displayed by the
 // 'pins' command. There is no other signficance to the order.
  const pin_mgt_t     staticPins[] = {
-  {           OCP_SCAN_LD_N, INPUT_PIN,   "OCP_SCAN_LD_N"},
-  {         OCP_MAIN_PWR_EN, IN_OUT_PIN,  "OCP_MAIN_PWR_EN"},
-  {        OCP_SCAN_DATA_IN, OUTPUT_PIN,  "OCP_SCAN_DATA_IN"},
-  {           OCP_PRSNTB1_N, INPUT_PIN,  "OCP_PRSNTB1_N"},
-  {              P1_LINKA_N, INPUT_PIN,   "P1_LINKA_N"},
-  {              SCAN_VER_0, INPUT_PIN,   "SCAN_VER_0"},
-  {       OCP_SCAN_DATA_OUT, INPUT_PIN,   "OCP_SCAN_DATA_OUT"},
-  {          OCP_AUX_PWR_EN, IN_OUT_PIN,  "OCP_AUX_PWR_EN"},
-  {            OCP_PWRBRK_N, INPUT_PIN,   "OCP_PWRBRK_N"},
-  {           OCP_PRSNTB3_N, INPUT_PIN,  "OCP_PRSNTB3_N"},
-  {              FAN_ON_AUX, INPUT_PIN,   "FAN_ON_AUX"},
-  {            P3_LED_ACT_N, INPUT_PIN,  "P3_LED_ACT_N"},
-  {           OCP_PRSNTB0_N, INPUT_PIN,  "OCP_PRSNTB0_N"},
-  {           OCP_PRSNTB2_N, INPUT_PIN,  "OCP_PRSNTB2_N"},
-  {              SCAN_VER_1, INPUT_PIN,   "SCAN_VER_1"},
-  {              OCP_WAKE_N, INPUT_PIN,   "OCP_WAKE_N"},
   {               TEMP_WARN, INPUT_PIN,   "TEMP_WARN"},
   {               TEMP_CRIT, INPUT_PIN,   "TEMP_CRIT"},
+  {              FAN_ON_AUX, INPUT_PIN,   "FAN_ON_AUX"},
+  {           OCP_SCAN_LD_N, INPUT_PIN,   "SCAN_LD_N"},
+  {         OCP_MAIN_PWR_EN, OUTPUT_PIN,  "MAIN_EN"},
+  {          OCP_AUX_PWR_EN, OUTPUT_PIN,  "AUX_EN"},
+  {        OCP_SCAN_DATA_IN, OUTPUT_PIN,  "SCAN_DATA_IN"},
+  {       OCP_SCAN_DATA_OUT, INPUT_PIN,   "SCAN_DATA_OUT"},
+  {              P1_LINKA_N, INPUT_PIN,   "P1_LINKA_N"},
+  {            P1_LED_ACT_N, INPUT_PIN,   "P1_LED_ACT_N"},
   {              LINK_ACT_2, INPUT_PIN,   "LINK_ACT_2"},
+  {              P3_LINKA_N, INPUT_PIN,   "P3_LINKA_N"},
+  {            P3_LED_ACT_N, INPUT_PIN,   "P3_LED_ACT_N"},
+  {           OCP_PRSNTB0_N, INPUT_PIN,   "PRSNTB0_N"},
+  {           OCP_PRSNTB2_N, INPUT_PIN,   "PRSNTB2_N"},
+  {           OCP_PRSNTB1_N, INPUT_PIN,   "PRSNTB1_N"},
+  {           OCP_PRSNTB3_N, INPUT_PIN,   "PRSNTB3_N"},
+  {              SCAN_VER_0, INPUT_PIN,   "SCAN_VER_0"},
+  {              SCAN_VER_1, INPUT_PIN,   "SCAN_VER_1"},
+  {              OCP_WAKE_N, INPUT_PIN,   "WAKE_N"},
+  {            OCP_PWRBRK_N, INPUT_PIN,   "PWRBRK_N"},
 };
 
 uint16_t      static_pin_count = sizeof(staticPins) / sizeof(pin_mgt_t);
@@ -56,14 +58,24 @@ uint8_t                 pinStates[PINS_COUNT] = {0};
 void configureIOPins(void)
 {
   pin_size_t        pinNo;
+  uint8_t           pinFunc;
 
   for ( int i = 0; i < static_pin_count; i++ )
   {
+      // output only pins are always defined as outputs
+      // in-out pins are defined as inputs except when
+      // being written to
+      if ( staticPins[i].pinFunc == OUTPUT_PIN )
+        pinFunc = OUTPUT;
+      else
+        pinFunc = INPUT;
+
       pinNo = staticPins[i].pinNo;
-      pinMode(pinNo, staticPins[i].pinFunc);
+      pinMode(pinNo, pinFunc);
 
       // increase drive strength on output pins
-      if ( staticPins[i].pinFunc == OUTPUT )
+      // NOTE: IN_OUT_PINs are defined as outputs
+      if ( staticPins[i].pinFunc != INPUT_PIN )
       {
           // see ttf/variants.cpp for the data in g_APinDescription[]
           // this will source 7mA, sink 10mA
@@ -120,6 +132,11 @@ int writeCmd(int arg)
         terminalOut((char *) "Cannot write to an input pin! Use 'pins' command for help.");
         return(1);
     }  
+    else if ( staticPins[index].pinFunc == IN_OUT_PIN )
+    {
+        // IN_OUT pin so switch to output mode to write
+        pinMode(staticPins[index].pinNo, OUTPUT);
+    }
 
     if ( value != 0 && value != 1 )
     {
@@ -129,6 +146,11 @@ int writeCmd(int arg)
 
     digitalWrite(pinNo, value);
     pinStates[pinNo] = (bool) value;
+
+    // if IN_OUT pin switch back to input mode
+    if ( staticPins[index].pinFunc == IN_OUT_PIN )
+        pinMode(staticPins[index].pinNo, INPUT);
+
     sprintf(outBfr, "Wrote %d to pin # %d (%s)", value, pinNo, getPinName(pinNo));
     terminalOut(outBfr);
     return(0);
@@ -208,14 +230,16 @@ void readAllInputPins(void)
 {
     uint8_t             pinNo;
 
-    // NOTE: Outputs are latched after the last write or are 0
-    // from reset.
     for ( int i = 0; i < static_pin_count; i++ )
     {
         pinNo = staticPins[i].pinNo;
-        if ( staticPins[i].pinFunc == INPUT_PIN )
+        if ( staticPins[i].pinFunc == OUTPUT_PIN )
         {
-            pinStates[pinNo] = digitalRead(pinNo);
+            pinStates[i] = (*portOutputRegister(digitalPinToPort(pinNo)) & digitalPinToBitMask(pinNo)) == 0 ? 0 : 1;
+        }
+        else
+        {
+            pinStates[i] = (*portInputRegister(digitalPinToPort(pinNo)) & digitalPinToBitMask(pinNo)) == 0 ? 0 : 1;
         }
     }
 }
@@ -248,48 +272,52 @@ int statusCmd(int arg)
       sprintf(outBfr, "TEMP CRIT         %u", pinStates[TEMP_CRIT]);
       displayLine(outBfr);
 
-      CURSOR(4,54);
-      sprintf(outBfr, "PRSNTB [3:0]     %u%u%u%u", pinStates[OCP_PRSNTB3_N], pinStates[OCP_PRSNTB2_N], pinStates[OCP_PRSNTB1_N], pinStates[OCP_PRSNTB0_N]);
+      CURSOR(4,56);
+      sprintf(outBfr, "PRSNTB [3:0]   %u%u%u%u", pinStates[OCP_PRSNTB3_N], pinStates[OCP_PRSNTB2_N], pinStates[OCP_PRSNTB1_N], pinStates[OCP_PRSNTB0_N]);
       displayLine(outBfr);
 
       CURSOR(5,1);
       sprintf(outBfr, "FAN ON AUX        %u", pinStates[FAN_ON_AUX]);
       displayLine(outBfr);
 
-      CURSOR(5,53);
-      sprintf(outBfr, "TP_LNKAC2         %u", pinStates[LINK_ACT_2]);
+      CURSOR(5,58);
+      sprintf(outBfr, "LINK_ACT_2      %u", pinStates[LINK_ACT_2]);
       displayLine(outBfr);
 
       CURSOR(6,1);
       sprintf(outBfr, "SCAN_LD_N         %d", pinStates[OCP_SCAN_LD_N]);
       displayLine(outBfr);
 
-      CURSOR(6,51);
-      sprintf(outBfr, "SCAN VERS [1:0]       %u%u", pinStates[SCAN_VER_1], pinStates[SCAN_VER_0]);
+      CURSOR(6,53);
+      sprintf(outBfr, "SCAN VERS [1:0]     %u%u", pinStates[SCAN_VER_1], pinStates[SCAN_VER_0]);
       displayLine(outBfr);
 
       CURSOR(7,1);
-      sprintf(outBfr, "AUX_PWR_EN        %d", pinStates[OCP_AUX_PWR_EN]);
+      sprintf(outBfr, "AUX_EN            %d", pinStates[OCP_AUX_PWR_EN]);
       displayLine(outBfr);      
 
-      CURSOR(7,56);
-      sprintf(outBfr, "OCP_PWRBRK_N       %d", pinStates[OCP_PWRBRK_N]);
+      CURSOR(7,60);
+      sprintf(outBfr, "PWRBRK_N      %d", pinStates[OCP_PWRBRK_N]);
       displayLine(outBfr);
 
       CURSOR(8,1);
-      sprintf(outBfr, "MAIN_PWR_EN       %d", pinStates[OCP_MAIN_PWR_EN]);
+      sprintf(outBfr, "MAIN_EN           %d", pinStates[OCP_MAIN_PWR_EN]);
       displayLine(outBfr);  
 
-      CURSOR(8,58);
-      sprintf(outBfr, "OCP_WAKE_N      %d", pinStates[OCP_WAKE_N]);
+      CURSOR(8,62);
+      sprintf(outBfr, "WAKE_N      %d", pinStates[OCP_WAKE_N]);
       displayLine(outBfr);
 
       CURSOR(9,1);
-      sprintf(outBfr, "P3_LED_ACT_N    %d", pinStates[P3_LED_ACT_N]);
+      sprintf(outBfr, "P3_LED_ACT_N      %d", pinStates[P3_LED_ACT_N]);
       displayLine(outBfr);  
 
-      CURSOR(9,57);
-      sprintf(outBfr, "P3_LINKA_N     %d", pinStates[P3_LINKA_N]);
+      CURSOR(9,58);
+      sprintf(outBfr, "P3_LINKA_N      %d", pinStates[P3_LINKA_N]);
+      displayLine(outBfr);
+
+      CURSOR(10,1);
+      sprintf(outBfr, "P1_LED_ACT_N      %d", pinStates[P1_LED_ACT_N]);
       displayLine(outBfr);
 
       CURSOR(24, 22);

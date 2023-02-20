@@ -30,8 +30,8 @@ void setup()
   // configure heartbeat LED pin and turn on which indicates that the
   // board is being initialized (not much initialization to do!)
   // NOTE: LED is active low.
-  pinMode(PIN_LED, OUTPUT);
-  digitalWrite(PIN_LED, LEDstate);
+  //pinMode(PIN_LED, OUTPUT);
+  //digitalWrite(PIN_LED, LEDstate);
 
   // configure I/O pins and read all inputs
   // NOTE: Output pins will be 0 initially
