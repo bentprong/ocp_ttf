@@ -47,8 +47,6 @@ extern EEPROM_data_t    EEPROMData;
 
 uint16_t      static_pin_count = sizeof(staticPins) / sizeof(pin_mgt_t);
 
-#define STATUS_DISPLAY_DELAY_ms     3000
-
 static char             outBfr[OUTBFR_SIZE];
 uint8_t                 pinStates[PINS_COUNT] = {0};
 
@@ -80,6 +78,9 @@ void configureIOPins(void)
           // see ttf/variants.cpp for the data in g_APinDescription[]
           // this will source 7mA, sink 10mA
           PORT->Group[g_APinDescription[pinNo].ulPort].PINCFG[g_APinDescription[pinNo].ulPin].bit.DRVSTR = 1;
+
+          // NOTE: This assumes that all outputs are active high!
+          writePin(pinNo, 0);
       }
   }
 }
@@ -88,12 +89,33 @@ void configureIOPins(void)
 //                    READ, WRITE COMMANDS
 //===================================================================
 
+bool readPin(uint8_t pinNo)
+{
+    uint8_t         index = getPinIndex(pinNo);
+
+    if ( staticPins[index].pinFunc == OUTPUT_PIN )
+    {
+        pinStates[index] = (*portOutputRegister(digitalPinToPort(pinNo)) & digitalPinToBitMask(pinNo)) == 0 ? 0 : 1;
+    }
+    else
+    {
+        pinStates[index] = digitalRead((pin_size_t) pinNo);
+    }
+
+    return(pinStates[pinNo]);
+}
+
+void writePin(uint8_t pinNo, uint8_t value)
+{
+    digitalWrite(pinNo, value);
+    pinStates[pinNo] = (bool) value;
+}
+
 // --------------------------------------------
 // readCmd() - read pin
 // --------------------------------------------
 int readCmd(int arg)
 {
-    uint8_t       pin;
     uint8_t       pinNo = atoi(tokens[1]);
 
     if ( pinNo > PINS_COUNT )
@@ -102,12 +124,8 @@ int readCmd(int arg)
         return(1);
     }
 
-    // TODO alternative is bitRead() but it requires a port, so that
-    // would have to be extracted from the pin map
-    // digitalPinToPort(pin) yields port # if pin is Arduino style
-    pin = digitalRead((pin_size_t) pinNo);
-    pinStates[pinNo] = pin;
-    sprintf(outBfr, "Pin %d (%s) = %d", pinNo, getPinName(pinNo), pin);
+    (void) readPin(pinNo);
+    sprintf(outBfr, "Pin %d (%s) = %d", pinNo, getPinName(pinNo), pinStates[pinNo]);
     terminalOut(outBfr);
     return(0);
 }
@@ -144,8 +162,7 @@ int writeCmd(int arg)
         return(1);
     }
 
-    digitalWrite(pinNo, value);
-    pinStates[pinNo] = (bool) value;
+    writePin(pinNo, value);
 
     // if IN_OUT pin switch back to input mode
     if ( staticPins[index].pinFunc == IN_OUT_PIN )
@@ -174,7 +191,6 @@ int pinCmd(int arg)
     int         count = static_pin_count;
     int         index = 0;
     uint8_t     pinNo;
-    char        ioChar1, ioChar2;
 
     terminalOut((char *) " #           Pin Name   I/O              #        Pin Name      I/O ");
     terminalOut((char *) "-------------------------------------------------------------------- ");
@@ -224,23 +240,13 @@ int pinCmd(int arg)
  }
 
 // --------------------------------------------
-// readAllInputPins() 
+// readAllPins() 
 // --------------------------------------------
-void readAllInputPins(void)
+void readAllPins(void)
 {
-    uint8_t             pinNo;
-
     for ( int i = 0; i < static_pin_count; i++ )
     {
-        pinNo = staticPins[i].pinNo;
-        if ( staticPins[i].pinFunc == OUTPUT_PIN )
-        {
-            pinStates[i] = (*portOutputRegister(digitalPinToPort(pinNo)) & digitalPinToBitMask(pinNo)) == 0 ? 0 : 1;
-        }
-        else
-        {
-            pinStates[i] = (*portInputRegister(digitalPinToPort(pinNo)) & digitalPinToBitMask(pinNo)) == 0 ? 0 : 1;
-        }
+        (void) readPin(staticPins[i].pinNo);
     }
 }
 
@@ -250,90 +256,107 @@ void readAllInputPins(void)
 // --------------------------------------------
 int statusCmd(int arg)
 {
-    float             v12I, v12V, v3p3I, v3p3V;
+    uint16_t        count = EEPROMData.status_delay_secs;
+    bool            oneShot = (count == 0) ? true : false;
 
     while ( 1 )
     {
-      readAllInputPins();
-
-      CLR_SCREEN();
-      CURSOR(1, 29);
-      displayLine((char *) "TTF Status Display");
-
-      CURSOR(3,1);
-      sprintf(outBfr, "TEMP WARN         %d", pinStates[TEMP_WARN]);
-      displayLine(outBfr);
-
-      CURSOR(3,57);
-      sprintf(outBfr, "P1_LINK_A_N      %u", pinStates[P1_LINKA_N]);
-      displayLine(outBfr);
-
-      CURSOR(4,1);
-      sprintf(outBfr, "TEMP CRIT         %u", pinStates[TEMP_CRIT]);
-      displayLine(outBfr);
-
-      CURSOR(4,56);
-      sprintf(outBfr, "PRSNTB [3:0]   %u%u%u%u", pinStates[OCP_PRSNTB3_N], pinStates[OCP_PRSNTB2_N], pinStates[OCP_PRSNTB1_N], pinStates[OCP_PRSNTB0_N]);
-      displayLine(outBfr);
-
-      CURSOR(5,1);
-      sprintf(outBfr, "FAN ON AUX        %u", pinStates[FAN_ON_AUX]);
-      displayLine(outBfr);
-
-      CURSOR(5,58);
-      sprintf(outBfr, "LINK_ACT_2      %u", pinStates[LINK_ACT_2]);
-      displayLine(outBfr);
-
-      CURSOR(6,1);
-      sprintf(outBfr, "SCAN_LD_N         %d", pinStates[OCP_SCAN_LD_N]);
-      displayLine(outBfr);
-
-      CURSOR(6,53);
-      sprintf(outBfr, "SCAN VERS [1:0]     %u%u", pinStates[SCAN_VER_1], pinStates[SCAN_VER_0]);
-      displayLine(outBfr);
-
-      CURSOR(7,1);
-      sprintf(outBfr, "AUX_EN            %d", pinStates[OCP_AUX_PWR_EN]);
-      displayLine(outBfr);      
-
-      CURSOR(7,60);
-      sprintf(outBfr, "PWRBRK_N      %d", pinStates[OCP_PWRBRK_N]);
-      displayLine(outBfr);
-
-      CURSOR(8,1);
-      sprintf(outBfr, "MAIN_EN           %d", pinStates[OCP_MAIN_PWR_EN]);
-      displayLine(outBfr);  
-
-      CURSOR(8,62);
-      sprintf(outBfr, "WAKE_N      %d", pinStates[OCP_WAKE_N]);
-      displayLine(outBfr);
-
-      CURSOR(9,1);
-      sprintf(outBfr, "P3_LED_ACT_N      %d", pinStates[P3_LED_ACT_N]);
-      displayLine(outBfr);  
-
-      CURSOR(9,58);
-      sprintf(outBfr, "P3_LINKA_N      %d", pinStates[P3_LINKA_N]);
-      displayLine(outBfr);
-
-      CURSOR(10,1);
-      sprintf(outBfr, "P1_LED_ACT_N      %d", pinStates[P1_LED_ACT_N]);
-      displayLine(outBfr);
-
-      CURSOR(24, 22);
-      displayLine((char *) "Hit any key to exit this display");
-
-      if ( SerialUSB.available()  )
-      {
-        // flush any user input and exit
-        while ( SerialUSB.available() )
-            (void) SerialUSB.read();
+        readAllPins();
 
         CLR_SCREEN();
-        return(0);
-      }
+        CURSOR(1, 29);
+        displayLine((char *) "TTF Status Display");
 
-      delay(EEPROMData.status_delay_secs * 1000);
+        CURSOR(3,1);
+        sprintf(outBfr, "TEMP WARN         %d", pinStates[TEMP_WARN]);
+        displayLine(outBfr);
+
+        CURSOR(3,57);
+        sprintf(outBfr, "P1_LINK_A_N      %u", pinStates[P1_LINKA_N]);
+        displayLine(outBfr);
+
+        CURSOR(4,1);
+        sprintf(outBfr, "TEMP CRIT         %u", pinStates[TEMP_CRIT]);
+        displayLine(outBfr);
+
+        CURSOR(4,56);
+        sprintf(outBfr, "PRSNTB [3:0]   %u%u%u%u", pinStates[OCP_PRSNTB3_N], pinStates[OCP_PRSNTB2_N], pinStates[OCP_PRSNTB1_N], pinStates[OCP_PRSNTB0_N]);
+        displayLine(outBfr);
+
+        CURSOR(5,1);
+        sprintf(outBfr, "FAN ON AUX        %u", pinStates[FAN_ON_AUX]);
+        displayLine(outBfr);
+
+        CURSOR(5,58);
+        sprintf(outBfr, "LINK_ACT_2      %u", pinStates[LINK_ACT_2]);
+        displayLine(outBfr);
+
+        CURSOR(6,1);
+        sprintf(outBfr, "SCAN_LD_N         %d", pinStates[OCP_SCAN_LD_N]);
+        displayLine(outBfr);
+
+        CURSOR(6,53);
+        sprintf(outBfr, "SCAN VERS [1:0]     %u%u", pinStates[SCAN_VER_1], pinStates[SCAN_VER_0]);
+        displayLine(outBfr);
+
+        CURSOR(7,1);
+        sprintf(outBfr, "AUX_EN            %d", pinStates[OCP_AUX_PWR_EN]);
+        displayLine(outBfr);      
+
+        CURSOR(7,60);
+        sprintf(outBfr, "PWRBRK_N      %d", pinStates[OCP_PWRBRK_N]);
+        displayLine(outBfr);
+
+        CURSOR(8,1);
+        sprintf(outBfr, "MAIN_EN           %d", pinStates[OCP_MAIN_PWR_EN]);
+        displayLine(outBfr);  
+
+        CURSOR(8,62);
+        sprintf(outBfr, "WAKE_N      %d", pinStates[OCP_WAKE_N]);
+        displayLine(outBfr);
+
+        CURSOR(9,1);
+        sprintf(outBfr, "P3_LED_ACT_N      %d", pinStates[P3_LED_ACT_N]);
+        displayLine(outBfr);  
+
+        CURSOR(9,58);
+        sprintf(outBfr, "P3_LINKA_N      %d", pinStates[P3_LINKA_N]);
+        displayLine(outBfr);
+
+        CURSOR(10,1);
+        sprintf(outBfr, "P1_LED_ACT_N      %d", pinStates[P1_LED_ACT_N]);
+        displayLine(outBfr);
+
+        if ( oneShot )
+        {
+            CURSOR(12,1);
+            displayLine((char *) "Status delay 0, set to nonzero for this screen to loop.");
+            return(0);
+        }
+
+        CURSOR(24, 22);
+        displayLine((char *) "Hit any key to exit this display");
+
+        while ( count-- > 0 )
+        {
+            if ( SerialUSB.available() )
+            {
+                // flush any user input and exit
+                (void) SerialUSB.read();
+
+                while ( SerialUSB.available() )
+                {
+                    (void) SerialUSB.read();
+                }
+
+                CLR_SCREEN();
+                return(0);
+            }
+
+            delay(1000);
+        }
+
+        count = EEPROMData.status_delay_secs;
     }
 
     return(0);
@@ -390,7 +413,6 @@ void set_help(void)
 //===================================================================
 int setCmd(int arg)
 {
-
     char          *parameter = tokens[1];
     String        valueEntered = tokens[2];
     float         fValue;

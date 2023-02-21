@@ -11,7 +11,8 @@
 #include "commands.hpp"
 #include "eeprom.hpp"
 #include "cli.hpp"
-#include "Wire.h"
+#include <Wire.h>
+#include "main.hpp"
 
 // heartbeat LED blink delays in ms (approx)
 #define FAST_BLINK_DELAY            200
@@ -36,7 +37,11 @@ void setup()
   // configure I/O pins and read all inputs
   // NOTE: Output pins will be 0 initially
   configureIOPins();
-  readAllInputPins();
+  readAllPins();
+
+  // enable main & aux power to NIC 3.0 card
+  writePin(OCP_MAIN_PWR_EN, 1);
+  writePin(OCP_AUX_PWR_EN, 1);
 
   // init simulated EEPROM
   EEPROM_InitLocal();
