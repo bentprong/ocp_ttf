@@ -44,6 +44,8 @@
 #define OCP_PRSNTB2_N         28  // PA14
 #define SCAN_VER_1            29  // PA15
 
+#define NCSI_RST_N            31  // PA28 per 4/6/2020 schematic
+
 #define OCP_WAKE_N            33  // PB03
 
 #define TEMP_WARN             34  // PA00

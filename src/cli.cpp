@@ -36,6 +36,7 @@ int pinCmd(int arg);
 int debug(int arg);
 int statusCmd(int arg);
 int eepromCmd(int arg);
+int pwrCmd(int arg);
 
 // CLI command table
 // CLI_COMMAND_CNT is defined in cli.hpp
@@ -47,6 +48,7 @@ cli_entry     cmdTable[CLI_COMMAND_CNT] = {
     {"debug",      debug,  -1, "Debug functions mostly for developer use.",      "Enter 'debug' with no arguments for more info."},
     {"eeprom", eepromCmd,  -1, "Displays FRU EEPROM info areas if no args.",     "'eeprom <addr> <length>' dumps <length> bytes @ <addr>"},
     {"pins",      pinCmd,   0, "Displays pin names and numbers.",                "NOTE: TTF uses Arduino-style pin numbering."},
+    {"power",     pwrCmd,   0, "Enable AUX and MAIN power to NIC 3.0 board.",    "Uses pwrdelay setting for delay between signals being asserted."},
     {"read",     readCmd,   1, "Read input pin (Arduino numbering).",            "'read <pin_number>'"},
     {"set",       setCmd,  -1, "Set EEPROM parameter to a value.",               "'set <param> <value>' sets value; or 'set' with no args for help."},
     {"status", statusCmd,   0, "Displays status of I/O pins etc.",               " "},

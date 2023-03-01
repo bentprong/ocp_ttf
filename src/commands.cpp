@@ -43,6 +43,7 @@ extern EEPROM_data_t    EEPROMData;
   {              SCAN_VER_1, INPUT,   "SCAN_VER_1"},
   {              OCP_WAKE_N, INPUT,   "WAKE_N"},
   {            OCP_PWRBRK_N, INPUT,   "PWRBRK_N"},
+  {              NCSI_RST_N, OUTPUT,  "NCSI_RST_N"},
 };
 
 uint16_t      static_pin_count = sizeof(staticPins) / sizeof(pin_mgt_t);
@@ -86,6 +87,11 @@ void configureIOPins(void)
           writePin(pinNo, 0);
       }
   }
+}
+
+int pwrCmd(int argCnt)
+{
+
 }
 
 //===================================================================
@@ -323,10 +329,14 @@ int statusCmd(int arg)
         sprintf(outBfr, "P1_LED_ACT_N      %d", pinStates[P1_LED_ACT_N]);
         displayLine(outBfr);
 
+        CURSOR(10, 54);
+        sprintf(outBfr, "NCSI_RST_N        %d", pinStates[NCSI_RST_N]);
+        displayLine(outBfr);
+
         if ( oneShot )
         {
             CURSOR(12,1);
-            displayLine((char *) "Status delay 0, set to nonzero for this screen to loop.");
+            displayLine((char *) "Status delay 0, set sdelay to nonzero for this screen to loop.");
             return(0);
         }
 
@@ -423,12 +433,20 @@ int setCmd(int arg)
 
     if ( strcmp(parameter, "sdelay") == 0 )
     {
-        // set ADC gain error
         iValue = valueEntered.toInt();
         if (EEPROMData.status_delay_secs != iValue )
         {
           isDirty = true;
           EEPROMData.status_delay_secs = iValue;
+        }
+    }
+    else if ( strcmp(parameter, "pwrdelay") == 0 )
+    {
+        iValue = valueEntered.toInt();
+        if (EEPROMData.pwr_seq_delay_msec != iValue )
+        {
+          isDirty = true;
+          EEPROMData.pwr_seq_delay_msec = iValue;
         }
     }
     else

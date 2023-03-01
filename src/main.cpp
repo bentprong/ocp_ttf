@@ -39,10 +39,12 @@ void setup()
   configureIOPins();
   readAllPins();
 
-  // enable main & aux power to NIC 3.0 card
+  // disable main & aux power to NIC 3.0 card
   writePin(OCP_MAIN_PWR_EN, 0);
   writePin(OCP_AUX_PWR_EN, 0);
-  writePin(
+
+  // deassert PHY reset
+  writePin(NCSI_RST_N, 1);
 
   // init simulated EEPROM
   EEPROM_InitLocal();
