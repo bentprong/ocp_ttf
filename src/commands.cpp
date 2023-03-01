@@ -22,33 +22,36 @@ extern EEPROM_data_t    EEPROMData;
 // NOTE: The order of the entries in this table is the order they are displayed by the
 // 'pins' command. There is no other signficance to the order.
  const pin_mgt_t     staticPins[] = {
-  {               TEMP_WARN, INPUT_PIN,   "TEMP_WARN"},
-  {               TEMP_CRIT, INPUT_PIN,   "TEMP_CRIT"},
-  {              FAN_ON_AUX, INPUT_PIN,   "FAN_ON_AUX"},
-  {           OCP_SCAN_LD_N, INPUT_PIN,   "SCAN_LD_N"},
-  {         OCP_MAIN_PWR_EN, OUTPUT_PIN,  "MAIN_EN"},
-  {          OCP_AUX_PWR_EN, OUTPUT_PIN,  "AUX_EN"},
-  {        OCP_SCAN_DATA_IN, OUTPUT_PIN,  "SCAN_DATA_IN"},
-  {       OCP_SCAN_DATA_OUT, INPUT_PIN,   "SCAN_DATA_OUT"},
-  {              P1_LINKA_N, INPUT_PIN,   "P1_LINKA_N"},
-  {            P1_LED_ACT_N, INPUT_PIN,   "P1_LED_ACT_N"},
-  {              LINK_ACT_2, INPUT_PIN,   "LINK_ACT_2"},
-  {              P3_LINKA_N, INPUT_PIN,   "P3_LINKA_N"},
-  {            P3_LED_ACT_N, INPUT_PIN,   "P3_LED_ACT_N"},
-  {           OCP_PRSNTB0_N, INPUT_PIN,   "PRSNTB0_N"},
-  {           OCP_PRSNTB2_N, INPUT_PIN,   "PRSNTB2_N"},
-  {           OCP_PRSNTB1_N, INPUT_PIN,   "PRSNTB1_N"},
-  {           OCP_PRSNTB3_N, INPUT_PIN,   "PRSNTB3_N"},
-  {              SCAN_VER_0, INPUT_PIN,   "SCAN_VER_0"},
-  {              SCAN_VER_1, INPUT_PIN,   "SCAN_VER_1"},
-  {              OCP_WAKE_N, INPUT_PIN,   "WAKE_N"},
-  {            OCP_PWRBRK_N, INPUT_PIN,   "PWRBRK_N"},
+  {               TEMP_WARN, OUTPUT,   "TEMP_WARN"},
+  {               TEMP_CRIT, OUTPUT,   "TEMP_CRIT"},
+  {              FAN_ON_AUX, OUTPUT,   "FAN_ON_AUX"},
+  {           OCP_SCAN_LD_N, OUTPUT,   "SCAN_LD_N"},
+  {         OCP_MAIN_PWR_EN, OUTPUT,  "MAIN_EN"},
+  {          OCP_AUX_PWR_EN, OUTPUT,  "AUX_EN"},
+  {        OCP_SCAN_DATA_IN, OUTPUT,  "SCAN_DATA_IN"},  // "in" to NIC 3.0 card
+  {       OCP_SCAN_DATA_OUT, INPUT,   "SCAN_DATA_OUT"}, // "out" from NIC 3.0 card
+  {              P1_LINKA_N, INPUT,   "P1_LINKA_N"},
+  {            P1_LED_ACT_N, INPUT,   "P1_LED_ACT_N"},
+  {              LINK_ACT_2, INPUT,   "LINK_ACT_2"},
+  {              P3_LINKA_N, INPUT,   "P3_LINKA_N"},
+  {            P3_LED_ACT_N, INPUT,   "P3_LED_ACT_N"},
+  {           OCP_PRSNTB0_N, INPUT,   "PRSNTB0_N"},
+  {           OCP_PRSNTB2_N, INPUT,   "PRSNTB2_N"},
+  {           OCP_PRSNTB1_N, INPUT,   "PRSNTB1_N"},
+  {           OCP_PRSNTB3_N, INPUT,   "PRSNTB3_N"},
+  {              SCAN_VER_0, INPUT,   "SCAN_VER_0"},
+  {              SCAN_VER_1, INPUT,   "SCAN_VER_1"},
+  {              OCP_WAKE_N, INPUT,   "WAKE_N"},
+  {            OCP_PWRBRK_N, INPUT,   "PWRBRK_N"},
 };
 
 uint16_t      static_pin_count = sizeof(staticPins) / sizeof(pin_mgt_t);
 
 static char             outBfr[OUTBFR_SIZE];
 uint8_t                 pinStates[PINS_COUNT] = {0};
+
+void writePin(uint8_t pinNo, uint8_t value);
+void readAllPins(void);
 
 // --------------------------------------------
 // configureIOPins()
@@ -63,7 +66,7 @@ void configureIOPins(void)
       // output only pins are always defined as outputs
       // in-out pins are defined as inputs except when
       // being written to
-      if ( staticPins[i].pinFunc == OUTPUT_PIN )
+      if ( staticPins[i].pinFunc == OUTPUT )
         pinFunc = OUTPUT;
       else
         pinFunc = INPUT;
@@ -73,7 +76,7 @@ void configureIOPins(void)
 
       // increase drive strength on output pins
       // NOTE: IN_OUT_PINs are defined as outputs
-      if ( staticPins[i].pinFunc != INPUT_PIN )
+      if ( staticPins[i].pinFunc == OUTPUT )
       {
           // see ttf/variants.cpp for the data in g_APinDescription[]
           // this will source 7mA, sink 10mA
@@ -93,7 +96,7 @@ bool readPin(uint8_t pinNo)
 {
     uint8_t         index = getPinIndex(pinNo);
 
-    if ( staticPins[index].pinFunc == OUTPUT_PIN )
+    if ( staticPins[index].pinFunc == OUTPUT )
     {
         pinStates[index] = (*portOutputRegister(digitalPinToPort(pinNo)) & digitalPinToBitMask(pinNo)) == 0 ? 0 : 1;
     }
@@ -145,16 +148,11 @@ int writeCmd(int arg)
         return(1);
     }    
 
-    if ( staticPins[index].pinFunc == INPUT_PIN )
+    if ( staticPins[index].pinFunc == INPUT )
     {
         terminalOut((char *) "Cannot write to an input pin! Use 'pins' command for help.");
         return(1);
     }  
-    else if ( staticPins[index].pinFunc == IN_OUT_PIN )
-    {
-        // IN_OUT pin so switch to output mode to write
-        pinMode(staticPins[index].pinNo, OUTPUT);
-    }
 
     if ( value != 0 && value != 1 )
     {
@@ -164,10 +162,6 @@ int writeCmd(int arg)
 
     writePin(pinNo, value);
 
-    // if IN_OUT pin switch back to input mode
-    if ( staticPins[index].pinFunc == IN_OUT_PIN )
-        pinMode(staticPins[index].pinNo, INPUT);
-
     sprintf(outBfr, "Wrote %d to pin # %d (%s)", value, pinNo, getPinName(pinNo));
     terminalOut(outBfr);
     return(0);
@@ -175,9 +169,9 @@ int writeCmd(int arg)
 
 char getPinChar(int index)
 {
-    if ( staticPins[index].pinFunc == INPUT_PIN )
+    if ( staticPins[index].pinFunc == INPUT )
         return('I');
-    else if ( staticPins[index].pinFunc == OUTPUT_PIN )
+    else if ( staticPins[index].pinFunc == OUTPUT )
         return('O');
     else
         return('B');
@@ -195,6 +189,8 @@ int pinCmd(int arg)
     terminalOut((char *) " #           Pin Name   I/O              #        Pin Name      I/O ");
     terminalOut((char *) "-------------------------------------------------------------------- ");
 
+	readAllPins();
+	
     while ( count > 0 )
     {
       if ( count == 1 )

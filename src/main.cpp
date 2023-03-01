@@ -40,8 +40,9 @@ void setup()
   readAllPins();
 
   // enable main & aux power to NIC 3.0 card
-  writePin(OCP_MAIN_PWR_EN, 1);
-  writePin(OCP_AUX_PWR_EN, 1);
+  writePin(OCP_MAIN_PWR_EN, 0);
+  writePin(OCP_AUX_PWR_EN, 0);
+  writePin(
 
   // init simulated EEPROM
   EEPROM_InitLocal();

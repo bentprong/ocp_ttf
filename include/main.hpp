@@ -7,13 +7,7 @@
 #include <Arduino.h>
 #include "cli.hpp"
 
-#define VERSION_ID               "1.0.1"
-
-// alises to support pin_mgt_t pinFunc - because Arduino doesn't
-// "like" writing to an input pin
-#define INPUT_PIN             INPUT
-#define OUTPUT_PIN            OUTPUT
-#define IN_OUT_PIN            4             // reserved future when DIP switches won't short
+#define VERSION_ID               "1.0.2"
 
 #define MAX_LINE_SZ                 80
 #define OUTBFR_SIZE                 (MAX_LINE_SZ * 3)
