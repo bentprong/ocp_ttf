@@ -1,11 +1,11 @@
 /*
-	Dell OCP XAVIER Board
+	Dell OCP TTF Board
 
-	This file should be part of a folder named 'xavier' at <root>/.platformio/framework-arduino-samd/variants
+	This file should be part of a folder named 'ttf' at <root>/.platformio/framework-arduino-samd/variants
 	<root> for the developer on a Mac was /Users/<username>
 	It was adopted from the Atmel Xplained Pro file/folder named w25_xplained_pro in the same folder.
-	January 2023
-	Richard Lewis/ASTL Enterprises LLC/rlewis@astlenterprises.com
+	February 2023
+	Richard Lewis/ASTL Enterprises LLC/rlewis@astlenterprises.com rick@fmspcb.com
 */
 
 #include "variant.h"
@@ -14,7 +14,7 @@ const PinDescription g_APinDescription[] = {
 
 /*
  +------------+------------------+--------+-----------------+--------+-----------------------+---------+---------+--------+--------+----------+----------+
- | Pin number | Xavier Pin       |  PIN   | Notes           | Peri.A |     Peripheral B      | Perip.C | Perip.D | Peri.E | Peri.F | Periph.G | Periph.H |
+ | Pin number | TTF Pin          |  PIN   | Notes           | Peri.A |     Peripheral B      | Perip.C | Perip.D | Peri.E | Peri.F | Periph.G | Periph.H |
  |            |                  |        |                 |   EIC  | ADC |  AC | PTC | DAC | SERCOMx | SERCOMx |  TCCx  |  TCCx  |    COM   | AC/GLCK  |
  |            |                  |        |                 |(EXTINT)|(AIN)|(AIN)|     |     | (x/PAD) | (x/PAD) | (x/WO) | (x/WO) |          |          |
  +------------+------------------+--------+-----------------+--------+-----+-----+-----+-----+---------+---------+--------+--------+----------+----------+
@@ -24,7 +24,7 @@ const PinDescription g_APinDescription[] = {
  | 03         | OCP_SCAN_CLK     |  PA11  |                 |   11   | *19 |     | X03 |     |   0/03  |   2/03  |*TCC1/1 | TCC0/3 | I2S/FS0  | GCLK_IO5 |
  +------------+------------------+--------+-----------------+--------+-----+-----+-----+-----+---------+---------+--------+--------+----------+----------+
  | 04         | OCP_PRSNTB1_N    |  PB10  |                 |  *10   |     |     |     |     |         |   4/02  |* TC5/0 | TCC0/4 | I2S/MCK1 | GCLK_IO4 |
- | 05         | PCIE_PRES_N      |  PB11  |                 |  *11   |     |     |     |     |         |   4/03  |* TC5/1 | TCC0/5 | I2S/SCK1 | GCLK_IO5 |
+ | 05         | P1_LINKA_N       |  PB11  |                 |  *11   |     |     |     |     |         |   4/03  |* TC5/1 | TCC0/5 | I2S/SCK1 | GCLK_IO5 |
  | 06         | UART_TX_UNUSED   |  PA20  |                 |  *04   |     |     | X08 |     |   5/02  |   3/02  |        |*TCC0/6 | I2S/SCK0 | GCLK_IO4 |
  | 07         | SCAN_VER_0       |  PA21  |                 |  *05   |     |     | X09 |     |   5/03  |   3/03  |        |*TCC0/7 | I2S/FS0  | GCLK_IO5 |
  +------------+------------------+--------+-----------------+--------+-----+-----+-----+-----+---------+---------+--------+--------+----------+----------+
@@ -41,19 +41,19 @@ const PinDescription g_APinDescription[] = {
 
 /*
  +------------+------------------+--------+-----------------+--------+-----------------------+---------+---------+--------+--------+----------+----------+
- | Pin number | Xavier Pin       |  PIN   | Notes           | Peri.A |     Peripheral B      | Perip.C | Perip.D | Peri.E | Peri.F | Periph.G | Periph.H |
+ | Pin number | TTF Pin          |  PIN   | Notes           | Peri.A |     Peripheral B      | Perip.C | Perip.D | Peri.E | Peri.F | Periph.G | Periph.H |
  |            |                  |        |                 |   EIC  | ADC |  AC | PTC | DAC | SERCOMx | SERCOMx |  TCCx  |  TCCx  |    COM   | AC/GLCK  |
  |            |                  |        |                 |(EXTINT)|(AIN)|(AIN)|     |     | (x/PAD) | (x/PAD) | (x/WO) | (x/WO) |          |          |
  +------------+------------------+--------+-----------------+--------+-----+-----+-----+-----+---------+---------+--------+--------+----------+----------+
  | 08         | OCP_SCAN_DATA_OUT|  PA08  |                 |  *00   |     |     | X04 |     |  *1/00  |   3/00  |*TCC2/0 | TCC0/6 |          | GCLK_IO2 |
  | 09         | OCP_AUX_PWR_EN   |  PA09  |                 |  *01   |     |     | X05 |     |  *1/01  |   3/01  | TCC2/1 | TCC0/7 |          | GCLK_IO3 |
- | 10         | NIC_PWR_GOOD     |  PA19  | JMP to PUART/3  |   03   |     |     | X07 |     |  *1/03  |   3/03  |* TC3/1 | TCC0/3 | I2S/SD0  | AC/CMP1  |
+ | 10         | UART_RX_UNUSED   |  PA19  |                 |   03   |     |     | X07 |     |  *1/03  |   3/03  |* TC3/1 | TCC0/3 | I2S/SD0  | AC/CMP1  |
  +------------+------------------+--------+-----------------+--------------------+-----+-----+---------+---------+--------+--------+----------+----------+
  |            |       Wire       |        |                 |        |     |     |     |     |         |         |        |        |          |          |
  | 11         | MCU_SDA          |  PA16  |                 |   NMI  | *16 |     | X00 |     |  *0/00  |   2/00  | TCC0/0 | TCC1/2 | I2S/SD1  |          |
  | 12         | MCU_SCL          |  PA17  |                 |   09   | *17 |     | X01 |     |  *0/01  |   2/01  | TCC0/1 | TCC1/3 | I2S/MCK0 |          |
  +------------+------------------+--------+-----------------+--------+-----+-----+-----+-----+---------+---------+--------+--------+----------+----------+
- | 13         | LED_PIN          |  PB23  | See variant.h   |   07   |     |     |     |     |         |  *5/03  |        |        |          | GCLK_IO1 |
+ | 13         | P1_LED_ACT_N     |  PB23  | See             |   07   |     |     |     |     |         |  *5/03  |        |        |          | GCLK_IO1 |
  | 14         | OCP_PWRBRK_N     |  PB22  |                 |   06   |     |     |     |     |         |  *5/02  |        |        |          | GCLK_IO0 |
  +------------+------------------+--------+-----------------+--------+-----+-----+-----+-----+---------+---------+--------+--------+----------+----------+
  */
@@ -70,32 +70,32 @@ const PinDescription g_APinDescription[] = {
 
 /*
  +------------+------------------+--------+-----------------+--------+-----------------------+---------+---------+--------+--------+----------+----------+
- | Pin number | Xavier Pin       |  PIN   | Notes           | Peri.A |     Peripheral B      | Perip.C | Perip.D | Peri.E | Peri.F | Periph.G | Periph.H |
+ | Pin number | TTF Pin          |  PIN   | Notes           | Peri.A |     Peripheral B      | Perip.C | Perip.D | Peri.E | Peri.F | Periph.G | Periph.H |
  |            |                  | *=mod  |                 |   EIC  | ADC |  AC | PTC | DAC | SERCOMx | SERCOMx |  TCCx  |  TCCx  |    COM   | AC/GLCK  |
  |            |                  |        |                 |(EXTINT)|(AIN)|(AIN)|     |     | (x/PAD) | (x/PAD) | (x/WO) | (x/WO) |          |          |
  +------------+------------------+--------+-----------------+--------+-----+-----+-----+-----+---------+---------+--------+--------+----------+----------+
- | 15         | OCP_BIF0_N       |  PA02  |                 |   02   | *00 |     | Y00 | OUT |         |         |        |        |          |          |
+ | 15         | NC_SPEED_A4      |  PA02  |                 |   02   | *00 |     | Y00 | OUT |         |         |        |        |          |          |
  | 16         | OCP_PRSNTB3_N    |  PB02  |                 |  *02   | *10 |     | Y08 |     |         |   5/00  |        |        |          |          |
  | 17         | FAN_ON_AUX       |  PB08  |                 |  *03   | *02 |     | Y09 |     |         |   5/01  |        |        |          |          |
- | 18         | OCP_SMB_RST_N    |  PB09  |                 |   04   | *03 |  00 | Y02 |     |         |   0/00  |*TCC0/0 |        |          |          |
+ | 18         | P3_LINKA_N       |  PB09  |                 |   04   | *03 |  00 | Y02 |     |         |   0/00  |*TCC0/0 |        |          |          |
  +------------+------------------+--------+-----------------+--------+-----+-----+-----+-----+---------+---------+--------+--------+----------+----------+
- | 19         | LFF_PORT0        |  PA05  |                 |   05   | *05 |  01 | Y03 |     |         |   0/01  |*TCC0/1 |        |          |          |
- | 20         | LFF_PORT1        |  PA06  |                 |   06   | *06 |  02 | Y04 |     |         |   0/02  | TCC1/0 |        |          |          |
- | 21         | LFF_PORT2        |  PA07  |                 |   07   | *07 |  03 | Y05 |     |         |   0/03  | TCC1/1 |        | I2S/SD0  |          |
+ | 19         | NC_SPEED_A7      |  PA05  |                 |   05   | *05 |  01 | Y03 |     |         |   0/01  |*TCC0/1 |        |          |          |
+ | 20         | P3_LED_ACT_N     |  PA06  |                 |   06   | *06 |  02 | Y04 |     |         |   0/02  | TCC1/0 |        |          |          |
+ | 21         | TP_LNKAC2        |  PA07  |                 |   07   | *07 |  03 | Y05 |     |         |   0/03  | TCC1/1 |        | I2S/SD0  |          |
  +------------+------------------+--------+-----------------+--------+-----+-----+-----+-----+---------+---------+--------+--------+----------+----------+
  */
-  { PORTA,  2, PIO_DIGITAL,  (PIN_ATTR_DIGITAL|PIN_ATTR_ANALOG /*DAC*/        ), ADC_Channel0,   NOT_ON_PWM, NOT_ON_TIMER, EXTERNAL_INT_NONE },
-  { PORTB,  2, PIO_DIGITAL,  (PIN_ATTR_DIGITAL                                ), ADC_Channel10,  NOT_ON_PWM, NOT_ON_TIMER, EXTERNAL_INT_2    },
-  { PORTB,  8, PIO_DIGITAL,  (PIN_ATTR_ANALOG                                ), ADC_Channel2,   NOT_ON_PWM, NOT_ON_TIMER, EXTERNAL_INT_NONE },
-  { PORTB,  9, PIO_DIGITAL,  (PIN_ATTR_ANALOG|PIN_ATTR_PWM|PIN_ATTR_TIMER    ), ADC_Channel3,   NOT_ON_PWM, NOT_ON_TIMER, EXTERNAL_INT_NONE },
+  { PORTA,  2, PIO_DIGITAL,  (PIN_ATTR_DIGITAL                                ), No_ADC_Channel,   NOT_ON_PWM, NOT_ON_TIMER, EXTERNAL_INT_NONE },
+  { PORTB,  2, PIO_DIGITAL,  (PIN_ATTR_DIGITAL                                ), No_ADC_Channel,  NOT_ON_PWM, NOT_ON_TIMER, EXTERNAL_INT_2    },
+  { PORTB,  8, PIO_DIGITAL,  (PIN_ATTR_DIGITAL                                ), No_ADC_Channel,   NOT_ON_PWM, NOT_ON_TIMER, EXTERNAL_INT_NONE },
+  { PORTB,  9, PIO_DIGITAL,  (PIN_ATTR_DIGITAL                                ), No_ADC_Channel,   NOT_ON_PWM, NOT_ON_TIMER, EXTERNAL_INT_NONE },
   
-  { PORTA,  5, PIO_DIGITAL,  (PIN_ATTR_DIGITAL|PIN_ATTR_PWM|PIN_ATTR_TIMER    ), ADC_Channel5,   PWM0_CH1,   TCC0_CH1,     EXTERNAL_INT_NONE },
-  { PORTA,  6, PIO_DIGITAL,  (PIN_ATTR_DIGITAL                                ), ADC_Channel6,   NOT_ON_PWM, NOT_ON_TIMER, EXTERNAL_INT_NONE },
-  { PORTA,  7, PIO_DIGITAL,  (PIN_ATTR_DIGITAL                                ), ADC_Channel7,   NOT_ON_PWM, NOT_ON_TIMER, EXTERNAL_INT_NONE },
+  { PORTA,  5, PIO_DIGITAL,  (PIN_ATTR_DIGITAL|PIN_ATTR_PWM|PIN_ATTR_TIMER    ), No_ADC_Channel,   PWM0_CH1,   TCC0_CH1,     EXTERNAL_INT_NONE },
+  { PORTA,  6, PIO_DIGITAL,  (PIN_ATTR_DIGITAL                                ), No_ADC_Channel,   NOT_ON_PWM, NOT_ON_TIMER, EXTERNAL_INT_NONE },
+  { PORTA,  7, PIO_DIGITAL,  (PIN_ATTR_DIGITAL                                ), No_ADC_Channel,   NOT_ON_PWM, NOT_ON_TIMER, EXTERNAL_INT_NONE },
 
 /*
  +------------+------------------+--------+-----------------+--------+-----------------------+---------+---------+--------+--------+----------+----------+
- | Pin number | Xavier Pin       |  PIN   | Notes           | Peri.A |     Peripheral B      | Perip.C | Perip.D | Peri.E | Peri.F | Periph.G | Periph.H |
+ | Pin number | TTF Pin          |  PIN   | Notes           | Peri.A |     Peripheral B      | Perip.C | Perip.D | Peri.E | Peri.F | Periph.G | Periph.H |
  |            |                  |        |                 |   EIC  | ADC |  AC | PTC | DAC | SERCOMx | SERCOMx |  TCCx  |  TCCx  |    COM   | AC/GLCK  |
  |            |                  |        |                 |(EXTINT)|(AIN)|(AIN)|     |     | (x/PAD) | (x/PAD) | (x/WO) | (x/WO) |          |          |
  +------------+------------------+--------+-----------------+--------+-----+-----+-----+-----+---------+---------+--------+--------+----------+----------+
@@ -104,7 +104,7 @@ const PinDescription g_APinDescription[] = {
  | 23         |                  |  PA25  | USB P           |   13   |     |     |     |     |   3/03  |   5/03  |  TC5/1 | TCC1/3 | USB/DP   |          |
  +------------+------------------+--------+-----------------+--------+-----+-----+-----+-----+---------+---------+--------+--------+----------+----------+
  | 24         | OCP_PRSNTB0_N    |  PA18  |                 |   02   |     |     | X06 |     |   1/02  |   3/02  |  TC3/0 | TCC0/2 |          | AC/CMP0  |
- | 25         | OCP_BIF1_N       |  PA03  |                 |   03   |  01 |     | Y01 |     |         |         |        |        |          |          |
+ | 25         | NC_SPEED_A6      |  PA03  |                 |   03   |  01 |     | Y01 |     |         |         |        |        |          |          |
  +------------+------------------+--------+-----------------+--------+-----+-----+-----+-----+---------+---------+--------+--------+----------+----------+
  */
   { PORTA, 24, PIO_COM,     (PIN_ATTR_NONE                                   ), No_ADC_Channel, NOT_ON_PWM, NOT_ON_TIMER, EXTERNAL_INT_NONE }, // USB/DM
@@ -115,18 +115,18 @@ const PinDescription g_APinDescription[] = {
 
 /*
  +------------+------------------+--------+-----------------+--------+-----------------------+---------+---------+--------+--------+----------+----------+
- | Pin number | Xavier Pin       | PIN    | Notes           | Peri.A |     Peripheral B      | Perip.C | Perip.D | Peri.E | Peri.F | Periph.G | Periph.H |
+ | Pin number | TTF Pin          | PIN    | Notes           | Peri.A |     Peripheral B      | Perip.C | Perip.D | Peri.E | Peri.F | Periph.G | Periph.H |
  |            |                  |        |                 |   EIC  | ADC |  AC | PTC | DAC | SERCOMx | SERCOMx |  TCCx  |  TCCx  |    COM   | AC/GLCK  |
  |            |                  |        |                 |(EXTINT)|(AIN)|(AIN)|     |     | (x/PAD) | (x/PAD) | (x/WO) | (x/WO) |          |          |
  +------------+------------------+--------+-----------------+--------+-----+-----+-----+-----+---------+---------+--------+--------+----------+----------+
- | 26         | OCP_SLOT_ID0     |  PA12  |                 |   12   |     |     |     |     |  *2/00  |   4/00  | TCC2/0 | TCC0/6 |          | AC/CMP0  |
- | 27         | OCP_SLOT_ID1     |  PA13  |                 |   13   |     |     |     |     |  *2/01  |   4/01  | TCC2/1 | TCC0/7 |          | AC/CMP1  |
+ | 26         | NC_LINK_ACT_4    |  PA12  |                 |   12   |     |     |     |     |  *2/00  |   4/00  | TCC2/0 | TCC0/6 |          | AC/CMP0  |
+ | 27         | NC_LINK_ACT_5    |  PA13  |                 |   13   |     |     |     |     |  *2/01  |   4/01  | TCC2/1 | TCC0/7 |          | AC/CMP1  |
  | 28         | OCP_PRSNTB2_N    |  PA14  |                 |   14   |     |     |     |     |   2/02  |   4/02  |  TC3/0 | TCC0/4 |          | GCLK_IO0 |
  | 29         | SCAN_VER_1       |  PA15  |                 |   15   |     |     |     |     |  *2/03  |   4/03  |  TC3/1 | TCC0/5 |          | GCLK_IO1 |
  +------------+------------------+--------+-----------------+--------+-----+-----+-----+-----+---------+---------+--------+--------+----------+----------+
- | 30         | PHY_RESET_N      |  PA27  |                 |   15   |     |     |     |     |         |         |        |        |          | GCLK_IO0 |
- | 31         | RBT_ISOLATE_N    |  PA28  |                 |   08   |     |     |     |     |         |         |        |        |          | GCLK_IO0 |
- | 32         | OCP_BIF2_N       |  PA04  |                 |   08   |  02 |     | Y14 |     |         |   4/00  |  TC4/0 |        |          |          |
+ | 30         | NC_LINK_ACT_6    |  PA27  |                 |   15   |     |     |     |     |         |         |        |        |          | GCLK_IO0 |
+ | 31         | NCSI_RST_N       |  PA28  |                 |   08   |     |     |     |     |         |         |        |        |          | GCLK_IO0 |
+ | 32         | NC_SPEED_A5      |  PA04  |                 |   08   |  02 |     | Y14 |     |         |   4/00  |  TC4/0 |        |          |          |
  | 33         | OCP_WAKE_N       |  PB03  |                 |  *09   |  03 |     | Y15 |     |         |   4/01  |  TC4/1 |        |          |          |
  +------------+------------------+--------+-----------------+--------+-----+-----+-----+-----+---------+---------+--------+--------+----------+----------+
  | 34         | TEMP_WARN        |  PA00  |                 |   00   |     |     |     |     |         |   1/00  | TCC2/0 |        |          |          |

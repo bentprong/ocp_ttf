@@ -14,8 +14,8 @@
       ]
     ],
     "mcu": "samd21g18a",
-    "usb_product": "Dell OCP Xavier",
-    "variant": "xavier"
+    "usb_product": "Dell OCP TTF",
+    "variant": "ttf"
   },
   "connectivity": [
     "wifi"
@@ -32,7 +32,7 @@
   "frameworks": [
     "arduino"
   ],
-  "name": "xavier",
+  "name": "ttf",
   "upload": {
     "maximum_ram_size": 32768,
     "maximum_size": 262144,
