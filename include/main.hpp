@@ -7,7 +7,7 @@
 #include <Arduino.h>
 #include "cli.hpp"
 
-#define VERSION_ID               "1.0.2"
+#define VERSION_ID               "1.0.5"
 
 #define MAX_LINE_SZ                 80
 #define OUTBFR_SIZE                 (MAX_LINE_SZ * 3)
@@ -56,10 +56,17 @@
 #define CLR_LINE()                  terminalOut((char *) "\x1b[0K")
 #define SHOW()                      terminalOut(outBfr)
 
+typedef enum {
+  ACT_UNDEF = 0,
+  ACT_LO,
+  ACT_HI,
+} ACTIVE_STATE;
+
 // Pin Management structure
 typedef struct {
   uint8_t           pinNo;
   uint8_t           pinFunc;
+  ACTIVE_STATE      activeState;
   char              name[20];
 } pin_mgt_t;
 

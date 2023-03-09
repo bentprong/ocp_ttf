@@ -48,7 +48,7 @@ cli_entry     cmdTable[CLI_COMMAND_CNT] = {
     {"debug",      debug,  -1, "Debug functions mostly for developer use.",      "Enter 'debug' with no arguments for more info."},
     {"eeprom", eepromCmd,  -1, "Displays FRU EEPROM info areas if no args.",     "'eeprom <addr> <length>' dumps <length> bytes @ <addr>"},
     {"pins",      pinCmd,   0, "Displays pin names and numbers.",                "NOTE: TTF uses Arduino-style pin numbering."},
-    {"power",     pwrCmd,   0, "Enable AUX and MAIN power to NIC 3.0 board.",    "Uses pwrdelay setting for delay between signals being asserted."},
+    {"power",     pwrCmd,   0, "Control AUX and MAIN power to NIC 3.0 board.",    "Uses pdelay setting for delay between signals being asserted."},
     {"read",     readCmd,   1, "Read input pin (Arduino numbering).",            "'read <pin_number>'"},
     {"set",       setCmd,  -1, "Set EEPROM parameter to a value.",               "'set <param> <value>' sets value; or 'set' with no args for help."},
     {"status", statusCmd,   0, "Displays status of I/O pins etc.",               " "},
@@ -57,11 +57,14 @@ cli_entry     cmdTable[CLI_COMMAND_CNT] = {
     {"help",        help,   0, "NOTE: THIS DOES NOT DISPLAY ON PURPOSE",         " "},    
 };
 
-// --------------------------------------------
-// CURSOR() - position cursor at (r,c) on ANSI
-// terminal.  Re-written from macro to flush
-// the stream and delay slightly.
-// --------------------------------------------
+/**
+  * @name   CURSOR
+  * @brief  set terminal cursor
+  * @param  r = row
+  * @param  c = column
+  * @retval None
+  * @note   no error checking for out of bounds params
+  */
 void CURSOR(uint8_t r,uint8_t c)                 
 {
     char          bfr[12];
@@ -72,10 +75,13 @@ void CURSOR(uint8_t r,uint8_t c)
     delay(5);
 }
 
-// --------------------------------------------
-// terminalOut() - wrapper to Serial.println
-// that flushes the stream and delays slightly
-// --------------------------------------------
+/**
+  * @name   terminalOut
+  * @brief  wrapper to SerialUSB.print[ln]
+  * @param  msg to output
+  * @retval None
+  * @note   needed to address missing chars
+  */
 void terminalOut(char *msg)
 {
     SerialUSB.println(msg);
@@ -83,10 +89,12 @@ void terminalOut(char *msg)
     delay(50);
 }
 
-// --------------------------------------------
-// displayLine() - wrapper to Serial.write()
-// to flush the stream and delay slightly
-// --------------------------------------------
+/**
+  * @name   displayLine
+  * @brief  wrapper to SerialUSB.write
+  * @param  None
+  * @retval None
+  */
 void displayLine(char *m)
 {
     SerialUSB.write(m);
@@ -94,9 +102,12 @@ void displayLine(char *m)
     delay(10);
 }
 
-// --------------------------------------------
-// doPrompt() - Write prompt to terminal
-// --------------------------------------------
+/**
+  * @name   doPrompt
+  * @brief  output firmware prompt to terminal
+  * @param  None
+  * @retval None
+  */
 void doPrompt(void)
 {
     SerialUSB.write(0x0a);
@@ -106,20 +117,25 @@ void doPrompt(void)
     SerialUSB.flush();
 }
 
-// --------------------------------------------
-// doHello() - display welcome message
-// --------------------------------------------
+/**
+  * @name   doHello
+  * @brief  Output welcome message to terminal
+  * @param  None
+  * @retval None
+  */
 void doHello(void)
 {
     sprintf(outBfr, "%s %s", hello, VERSION_ID);
     terminalOut(outBfr);
 }
 
-// --------------------------------------------
-// waitAnyKey() - wait for any key pressed
-//
-// WARNING: This is a blocking call!
-// --------------------------------------------
+/**
+  * @name   waitAnyKey
+  * @brief  wait for any keyboard hit 
+  * @param  None
+  * @retval None
+  * @note   WARNING! Blocking call!
+  */
 int waitAnyKey(void)
 {
     int             charIn;
@@ -131,9 +147,12 @@ int waitAnyKey(void)
     return(charIn);
 }
 
-// --------------------------------------------
-// cli() - Command Line Interpreter
-// --------------------------------------------
+/**
+  * @name   cli
+  * @brief  command line interpreter
+  * @param  raw = raw input line from terminal
+  * @retval None
+  */
 bool cli(char *raw)
 {
     bool         rc = false;
@@ -221,9 +240,12 @@ bool cli(char *raw)
 
 } // cli()
 
-//===================================================================
-//                               HELP Command
-//===================================================================
+/**
+  * @name   help
+  * @brief  CLI help feature
+  * @param  None
+  * @retval None
+  */
 int help(int arg)
 {
     doHello();

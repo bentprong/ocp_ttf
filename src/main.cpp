@@ -18,9 +18,12 @@
 #define FAST_BLINK_DELAY            200
 #define SLOW_BLINK_DELAY            1000
 
-//===================================================================
-//                      setup() - Initialization
-//===================================================================
+/**
+  * @name   setup
+  * @brief  system initialization
+  * @param  None
+  * @retval None
+  */
 void setup() 
 {
   bool        LEDstate = false;
@@ -80,6 +83,13 @@ void setup()
 // terminated input line has been received, it calls the CLI to
 // parse and execute any valid command, or sends an error message.
 //===================================================================
+/**
+  * @name   loop
+  * @brief  main program loop
+  * @param  None
+  * @retval None
+  * @note   see comment block for more info
+  */
 void loop() 
 {
   int             byteIn;
@@ -166,3 +176,10 @@ void loop()
   }
 
 } // loop()
+
+/**
+  * @name   
+  * @brief  
+  * @param  None
+  * @retval None
+  */

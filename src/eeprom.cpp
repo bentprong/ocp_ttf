@@ -37,10 +37,15 @@ const char              sixBitASCII[64] = " !\"$%&'()*+,-./123456789:;<=>?ABCDEF
 // temporary read buffer for FRU EEPROM
 byte              EEPROMBuffer[EEPROM_MAX_LEN];
 
-// --------------------------------------------
-// readEEPROM() - read from FRU EEPROM into
-// EEPROMBuffer up to max length
-// --------------------------------------------
+/**
+  * @name   readEEPROM
+  * @brief  read FRU EEPROM
+  * @param  i2cAddr 
+  * @param  eeaddress 
+  * @param  dest pointer to write data to
+  * @param  length in bytes to read
+  * @retval None
+  */
 void readEEPROM(uint8_t i2cAddr, uint32_t eeaddress, uint8_t *dest, uint16_t length)
 {
   if ( length > EEPROM_MAX_LEN )
@@ -65,6 +70,13 @@ void readEEPROM(uint8_t i2cAddr, uint32_t eeaddress, uint8_t *dest, uint16_t len
 // FRU EEPROM. NOTE: Not in use, here in case.
 // NOTE: Not tested! Should work, hahah.
 // --------------------------------------------
+/**
+  * @name   writeEEPROMPage
+  * @brief  write page of data to FRU EEPROM
+  * @param  None
+  * @retval None
+  * @note   NOT TESTED!
+  */
 void writeEEPROMPage(uint8_t i2cAddr, long eeAddress, byte *buffer)
 {
 
@@ -83,6 +95,14 @@ void writeEEPROMPage(uint8_t i2cAddr, long eeAddress, byte *buffer)
 // --------------------------------------------
 // unpack6bitASCII()
 // --------------------------------------------
+/**
+  * @name   unpack6bitASCII
+  * @brief  unpack into 8-bit ASCII
+  * @param  s pointer to write unpacked  data to
+  * @param  field_length
+  * @param  bytes pointer to packed data
+  * @retval None
+  */
 void unpack6bitASCII(char *s, uint8_t field_length, uint8_t *bytes)
 {
     uint8_t         temp;
@@ -377,6 +397,7 @@ void EEPROM_Defaults(void)
 {
     EEPROMData.sig = EEPROM_signature;
     EEPROMData.status_delay_secs = 3;
+    EEPROMData.pwr_seq_delay_msec = 250;
 
     // TODO add other fields
 }
@@ -397,9 +418,7 @@ bool EEPROM_InitLocal(void)
     {
       // EEPROM failed: either never been used, or real failure
       // initialize the signature and settings
-
-      // FIXME: When debugging, EEPROM fails every time, but it
-      // is OK over resets and power cycles.  
+ 
       EEPROM_Defaults();
 
       // save EEPROM data on the device

@@ -22,28 +22,28 @@ extern EEPROM_data_t    EEPROMData;
 // NOTE: The order of the entries in this table is the order they are displayed by the
 // 'pins' command. There is no other signficance to the order.
  const pin_mgt_t     staticPins[] = {
-  {               TEMP_WARN, OUTPUT,   "TEMP_WARN"},
-  {               TEMP_CRIT, OUTPUT,   "TEMP_CRIT"},
-  {              FAN_ON_AUX, OUTPUT,   "FAN_ON_AUX"},
-  {           OCP_SCAN_LD_N, OUTPUT,   "SCAN_LD_N"},
-  {         OCP_MAIN_PWR_EN, OUTPUT,  "MAIN_EN"},
-  {          OCP_AUX_PWR_EN, OUTPUT,  "AUX_EN"},
-  {        OCP_SCAN_DATA_IN, OUTPUT,  "SCAN_DATA_IN"},  // "in" to NIC 3.0 card
-  {       OCP_SCAN_DATA_OUT, INPUT,   "SCAN_DATA_OUT"}, // "out" from NIC 3.0 card
-  {              P1_LINKA_N, INPUT,   "P1_LINKA_N"},
-  {            P1_LED_ACT_N, INPUT,   "P1_LED_ACT_N"},
-  {              LINK_ACT_2, INPUT,   "LINK_ACT_2"},
-  {              P3_LINKA_N, INPUT,   "P3_LINKA_N"},
-  {            P3_LED_ACT_N, INPUT,   "P3_LED_ACT_N"},
-  {           OCP_PRSNTB0_N, INPUT,   "PRSNTB0_N"},
-  {           OCP_PRSNTB2_N, INPUT,   "PRSNTB2_N"},
-  {           OCP_PRSNTB1_N, INPUT,   "PRSNTB1_N"},
-  {           OCP_PRSNTB3_N, INPUT,   "PRSNTB3_N"},
-  {              SCAN_VER_0, INPUT,   "SCAN_VER_0"},
-  {              SCAN_VER_1, INPUT,   "SCAN_VER_1"},
-  {              OCP_WAKE_N, INPUT,   "WAKE_N"},
-  {            OCP_PWRBRK_N, INPUT,   "PWRBRK_N"},
-  {              NCSI_RST_N, OUTPUT,  "NCSI_RST_N"},
+  {               TEMP_WARN, OUTPUT,    ACT_HI, "TEMP_WARN"},
+  {               TEMP_CRIT, OUTPUT,    ACT_HI, "TEMP_CRIT"},
+  {              FAN_ON_AUX, OUTPUT,    ACT_HI, "FAN_ON_AUX"},
+  {           OCP_SCAN_LD_N, OUTPUT,    ACT_LO, "SCAN_LD_N"},
+  {         OCP_MAIN_PWR_EN, OUTPUT,    ACT_HI, "MAIN_EN"},
+  {          OCP_AUX_PWR_EN, OUTPUT,    ACT_HI, "AUX_EN"},
+  {        OCP_SCAN_DATA_IN, OUTPUT,    ACT_HI, "SCAN_DATA_IN"},  // "in" to NIC 3.0 card
+  {       OCP_SCAN_DATA_OUT, INPUT,     ACT_HI, "SCAN_DATA_OUT"}, // "out" from NIC 3.0 card
+  {              P1_LINKA_N, INPUT,     ACT_LO, "P1_LINKA_N"},
+  {            P1_LED_ACT_N, INPUT,     ACT_LO, "P1_LED_ACT_N"},
+  {              LINK_ACT_2, INPUT,     ACT_LO, "LINK_ACT_2"},
+  {              P3_LINKA_N, INPUT,     ACT_LO, "P3_LINKA_N"},
+  {            P3_LED_ACT_N, INPUT,     ACT_LO, "P3_LED_ACT_N"},
+  {           OCP_PRSNTB0_N, INPUT,     ACT_LO, "PRSNTB0_N"},
+  {           OCP_PRSNTB2_N, INPUT,     ACT_LO, "PRSNTB2_N"},
+  {           OCP_PRSNTB1_N, INPUT,     ACT_LO, "PRSNTB1_N"},
+  {           OCP_PRSNTB3_N, INPUT,     ACT_LO, "PRSNTB3_N"},
+  {              SCAN_VER_0, INPUT,     ACT_HI, "SCAN_VER_0"},
+  {              SCAN_VER_1, INPUT,     ACT_HI, "SCAN_VER_1"},
+  {              OCP_WAKE_N, INPUT,     ACT_LO, "WAKE_N"},
+  {            OCP_PWRBRK_N, INPUT,     ACT_LO, "PWRBRK_N"},
+  {              NCSI_RST_N, OUTPUT,    ACT_LO, "NCSI_RST_N"},
 };
 
 uint16_t      static_pin_count = sizeof(staticPins) / sizeof(pin_mgt_t);
@@ -54,9 +54,12 @@ uint8_t                 pinStates[PINS_COUNT] = {0};
 void writePin(uint8_t pinNo, uint8_t value);
 void readAllPins(void);
 
-// --------------------------------------------
-// configureIOPins()
-// --------------------------------------------
+/**
+  * @name   configureIOPins
+  * @brief  configure all I/O pins
+  * @param  None
+  * @retval None
+  */
 void configureIOPins(void)
 {
   pin_size_t        pinNo;
@@ -64,68 +67,67 @@ void configureIOPins(void)
 
   for ( int i = 0; i < static_pin_count; i++ )
   {
-      // output only pins are always defined as outputs
-      // in-out pins are defined as inputs except when
-      // being written to
-      if ( staticPins[i].pinFunc == OUTPUT )
-        pinFunc = OUTPUT;
-      else
-        pinFunc = INPUT;
-
       pinNo = staticPins[i].pinNo;
-      pinMode(pinNo, pinFunc);
+      pinMode(pinNo, staticPins[i].pinFunc);
 
-      // increase drive strength on output pins
-      // NOTE: IN_OUT_PINs are defined as outputs
       if ( staticPins[i].pinFunc == OUTPUT )
       {
+          // increase drive strength on output pins
           // see ttf/variants.cpp for the data in g_APinDescription[]
-          // this will source 7mA, sink 10mA
+          // NOTE: this will source 7mA, sink 10mA
           PORT->Group[g_APinDescription[pinNo].ulPort].PINCFG[g_APinDescription[pinNo].ulPin].bit.DRVSTR = 1;
 
-          // NOTE: This assumes that all outputs are active high!
-          writePin(pinNo, 0);
+          // deassert pin
+          writePin(pinNo, (staticPins[i].activeState == ACT_LO) ? 1 : 0);
       }
   }
-}
-
-int pwrCmd(int argCnt)
-{
-
 }
 
 //===================================================================
 //                    READ, WRITE COMMANDS
 //===================================================================
 
+/**
+  * @name   readPin
+  * @brief  wrapper to digitalRead via pinStates[]
+  * @param  None
+  * @retval None
+  */
 bool readPin(uint8_t pinNo)
 {
     uint8_t         index = getPinIndex(pinNo);
 
-    if ( staticPins[index].pinFunc == OUTPUT )
-    {
-        pinStates[index] = (*portOutputRegister(digitalPinToPort(pinNo)) & digitalPinToBitMask(pinNo)) == 0 ? 0 : 1;
-    }
-    else
-    {
+    if ( staticPins[index].pinFunc == INPUT )
         pinStates[index] = digitalRead((pin_size_t) pinNo);
-    }
 
-    return(pinStates[pinNo]);
+    return(pinStates[index]);
 }
 
+/**
+  * @name   writePin
+  * @brief  wrapper to digitalWrite via pinStates[]
+  * @param  pinNo = Arduino pin #
+  * @param  value = value to write 0 or 1
+  * @retval None
+  */
 void writePin(uint8_t pinNo, uint8_t value)
 {
+    value = (value == 0) ? 0 : 1;
     digitalWrite(pinNo, value);
-    pinStates[pinNo] = (bool) value;
+    pinStates[getPinIndex(pinNo)] = (bool) value;
 }
 
-// --------------------------------------------
-// readCmd() - read pin
-// --------------------------------------------
+/**
+  * @name   readCmd
+  * @brief  read an I/O pin
+  * @param  arg 1 = Arduino pin #
+  * @retval 0=OK 1=pin # not found
+  * @note   displays pin info
+  */
 int readCmd(int arg)
 {
     uint8_t       pinNo = atoi(tokens[1]);
+    uint8_t       index = getPinIndex(pinNo);
 
     if ( pinNo > PINS_COUNT )
     {
@@ -134,15 +136,20 @@ int readCmd(int arg)
     }
 
     (void) readPin(pinNo);
-    sprintf(outBfr, "Pin %d (%s) = %d", pinNo, getPinName(pinNo), pinStates[pinNo]);
+    sprintf(outBfr, "%s Pin %d (%s) = %d", (staticPins[index].pinFunc == INPUT) ? "Input" : "Output", 
+            pinNo, getPinName(pinNo), pinStates[index]);
     terminalOut(outBfr);
     return(0);
 }
 
-// --------------------------------------------
-// writeCmd() - write a pin with 0 or 1
-// --------------------------------------------
-int writeCmd(int arg)
+/**
+  * @name   writeCmd
+  * @brief  write a pin with 0 or 1
+  * @param  arg 1 Arduino pin #
+  * @param  arg 2 value to write
+  * @retval None
+  */
+int writeCmd(int argCnt)
 {
     uint8_t     pinNo = atoi(tokens[1]);
     uint8_t     value = atoi(tokens[2]);
@@ -173,26 +180,36 @@ int writeCmd(int arg)
     return(0);
 }
 
+/**
+  * @name   
+  * @brief  
+  * @param  None
+  * @retval 0
+  */
 char getPinChar(int index)
 {
     if ( staticPins[index].pinFunc == INPUT )
-        return('I');
+        return('<');
     else if ( staticPins[index].pinFunc == OUTPUT )
-        return('O');
+        return('>');
     else
-        return('B');
+        return('=');
 }
 
-// --------------------------------------------
-// pinCmd() - dump all I/O pins on terminal
-// --------------------------------------------
+/**
+  * @name   pinCmd
+  * @brief  display I/O pins
+  * @param  argCnt = CLI arg count
+  * @retval None
+  */
 int pinCmd(int arg)
 {
     int         count = static_pin_count;
     int         index = 0;
     uint8_t     pinNo;
 
-    terminalOut((char *) " #           Pin Name   I/O              #        Pin Name      I/O ");
+    terminalOut((char *) " ");
+    terminalOut((char *) " #           Pin Name   D/S              #        Pin Name      D/S ");
     terminalOut((char *) "-------------------------------------------------------------------- ");
 
 	readAllPins();
@@ -202,7 +219,7 @@ int pinCmd(int arg)
       if ( count == 1 )
       {
           sprintf(outBfr, "%2d %20s %c %d ", staticPins[index].pinNo, staticPins[index].name,
-                  getPinChar(index), pinStates[staticPins[index].pinNo]);
+                  getPinChar(index), readPin(staticPins[index].pinNo));
           terminalOut(outBfr);
           break;
       }
@@ -210,15 +227,17 @@ int pinCmd(int arg)
       {
           pinNo = staticPins[index].pinNo;
           sprintf(outBfr, "%2d %20s %c %d\t\t%2d %20s %c %d ", 
-                  pinNo, staticPins[index].name, getPinChar(index), pinStates[pinNo],
-                  staticPins[index+1].pinNo, staticPins[index+1].name, getPinChar(index+1),
-                  pinStates[staticPins[index+1].pinNo]);
+                  staticPins[index].pinNo, staticPins[index].name, 
+                  getPinChar(index), readPin(staticPins[index].pinNo),
+                  staticPins[index+1].pinNo, staticPins[index+1].name, 
+                  getPinChar(index+1), readPin(staticPins[index+1].pinNo));
           terminalOut(outBfr);
           count -= 2;
           index += 2;
       }
     }
 
+    terminalOut((char *) "D/S = Direction/State; < input, > output");
     return(0);
 }
 
@@ -226,9 +245,12 @@ int pinCmd(int arg)
 //                         Status Display Screen
 //===================================================================
 
-// --------------------------------------------
-// padBuffer() - pad a buffer with spaces
-// --------------------------------------------
+/**
+  * @name   padBuffer
+  * @brief  pad outBfr with spaces 
+  * @param  pos = position to start padding at in 'outBfr'
+  * @retval None
+  */
  char *padBuffer(int pos)
  {
     int         leftLen = strlen(outBfr);
@@ -241,9 +263,12 @@ int pinCmd(int arg)
     return(s);
  }
 
-// --------------------------------------------
-// readAllPins() 
-// --------------------------------------------
+/**
+  * @name   readAllPins
+  * @brief  read all I/O pins into pinStates[]
+  * @param  None
+  * @retval None
+  */
 void readAllPins(void)
 {
     for ( int i = 0; i < static_pin_count; i++ )
@@ -252,10 +277,12 @@ void readAllPins(void)
     }
 }
 
-// --------------------------------------------
-// statusCmd() - status display (real-time)
-// can be stopped by pressing any key
-// --------------------------------------------
+/**
+  * @name   statusCmd
+  * @brief  display status screen
+  * @param  argCnt = number of CLI arguments
+  * @retval None
+  */
 int statusCmd(int arg)
 {
     uint16_t        count = EEPROMData.status_delay_secs;
@@ -270,67 +297,68 @@ int statusCmd(int arg)
         displayLine((char *) "TTF Status Display");
 
         CURSOR(3,1);
-        sprintf(outBfr, "TEMP WARN         %d", pinStates[TEMP_WARN]);
+        sprintf(outBfr, "TEMP WARN         %d", readPin(TEMP_WARN));
         displayLine(outBfr);
 
         CURSOR(3,57);
-        sprintf(outBfr, "P1_LINK_A_N      %u", pinStates[P1_LINKA_N]);
+        sprintf(outBfr, "P1_LINK_A_N      %u", readPin(P1_LINKA_N));
         displayLine(outBfr);
 
         CURSOR(4,1);
-        sprintf(outBfr, "TEMP CRIT         %u", pinStates[TEMP_CRIT]);
+        sprintf(outBfr, "TEMP CRIT         %u", readPin(TEMP_CRIT));
         displayLine(outBfr);
 
         CURSOR(4,56);
-        sprintf(outBfr, "PRSNTB [3:0]   %u%u%u%u", pinStates[OCP_PRSNTB3_N], pinStates[OCP_PRSNTB2_N], pinStates[OCP_PRSNTB1_N], pinStates[OCP_PRSNTB0_N]);
+        sprintf(outBfr, "PRSNTB [3:0]   %u%u%u%u", readPin(OCP_PRSNTB3_N), readPin(OCP_PRSNTB2_N), 
+                readPin(OCP_PRSNTB1_N), readPin(OCP_PRSNTB0_N));
         displayLine(outBfr);
 
         CURSOR(5,1);
-        sprintf(outBfr, "FAN ON AUX        %u", pinStates[FAN_ON_AUX]);
+        sprintf(outBfr, "FAN ON AUX        %u", readPin(FAN_ON_AUX));
         displayLine(outBfr);
 
         CURSOR(5,58);
-        sprintf(outBfr, "LINK_ACT_2      %u", pinStates[LINK_ACT_2]);
+        sprintf(outBfr, "LINK_ACT_2      %u", readPin(LINK_ACT_2));
         displayLine(outBfr);
 
         CURSOR(6,1);
-        sprintf(outBfr, "SCAN_LD_N         %d", pinStates[OCP_SCAN_LD_N]);
+        sprintf(outBfr, "SCAN_LD_N         %d", readPin(OCP_SCAN_LD_N));
         displayLine(outBfr);
 
         CURSOR(6,53);
-        sprintf(outBfr, "SCAN VERS [1:0]     %u%u", pinStates[SCAN_VER_1], pinStates[SCAN_VER_0]);
+        sprintf(outBfr, "SCAN VERS [1:0]     %u%u", readPin(SCAN_VER_1), readPin(SCAN_VER_0));
         displayLine(outBfr);
 
         CURSOR(7,1);
-        sprintf(outBfr, "AUX_EN            %d", pinStates[OCP_AUX_PWR_EN]);
+        sprintf(outBfr, "AUX_EN            %d", readPin(OCP_AUX_PWR_EN));
         displayLine(outBfr);      
 
         CURSOR(7,60);
-        sprintf(outBfr, "PWRBRK_N      %d", pinStates[OCP_PWRBRK_N]);
+        sprintf(outBfr, "PWRBRK_N      %d", readPin(OCP_PWRBRK_N));
         displayLine(outBfr);
 
         CURSOR(8,1);
-        sprintf(outBfr, "MAIN_EN           %d", pinStates[OCP_MAIN_PWR_EN]);
+        sprintf(outBfr, "MAIN_EN           %d", readPin(OCP_MAIN_PWR_EN));
         displayLine(outBfr);  
 
         CURSOR(8,62);
-        sprintf(outBfr, "WAKE_N      %d", pinStates[OCP_WAKE_N]);
+        sprintf(outBfr, "WAKE_N      %d", readPin(OCP_WAKE_N));
         displayLine(outBfr);
 
         CURSOR(9,1);
-        sprintf(outBfr, "P3_LED_ACT_N      %d", pinStates[P3_LED_ACT_N]);
+        sprintf(outBfr, "P3_LED_ACT_N      %d", readPin(P3_LED_ACT_N));
         displayLine(outBfr);  
 
         CURSOR(9,58);
-        sprintf(outBfr, "P3_LINKA_N      %d", pinStates[P3_LINKA_N]);
+        sprintf(outBfr, "P3_LINKA_N      %d", readPin(P3_LINKA_N));
         displayLine(outBfr);
 
         CURSOR(10,1);
-        sprintf(outBfr, "P1_LED_ACT_N      %d", pinStates[P1_LED_ACT_N]);
+        sprintf(outBfr, "P1_LED_ACT_N      %d", readPin(P1_LED_ACT_N));
         displayLine(outBfr);
 
-        CURSOR(10, 54);
-        sprintf(outBfr, "NCSI_RST_N        %d", pinStates[NCSI_RST_N]);
+        CURSOR(10, 58);
+        sprintf(outBfr, "NCSI_RST_N      %d", readPin(NCSI_RST_N));
         displayLine(outBfr);
 
         if ( oneShot )
@@ -370,11 +398,12 @@ int statusCmd(int arg)
 } // statusCmd()
 
 
-// --------------------------------------------
-// getPinName() - get name of pin from pin #
-// Returns pointer to pin name, or 'unknown' 
-// if pinNo not found.
-// --------------------------------------------
+/**
+  * @name   getPinName
+  * @brief  get name of pin
+  * @param  Arduino pin number
+  * @retval pointer to name or 'unknown' if not found
+  */
 const char *getPinName(int pinNo)
 {
     for ( int i = 0; i < static_pin_count; i++ )
@@ -386,11 +415,12 @@ const char *getPinName(int pinNo)
     return("Unknown");
 }
 
-// --------------------------------------------
-// getPinIndex() - get index into staticPins[]
-// based on Arduino pin #. Returns -1 if pin
-// not found, else index.
-// --------------------------------------------
+/**
+  * @name   getPinIndex
+  * @brief  get index into static/dynamic pin arrays
+  * @param  Arduino pin number
+  * @retval None
+  */
 int8_t getPinIndex(uint8_t pinNo)
 {
     for ( int i = 0; i < static_pin_count; i++ )
@@ -402,6 +432,12 @@ int8_t getPinIndex(uint8_t pinNo)
     return(-1);
 }
 
+/**
+  * @name   set_help
+  * @brief  help for set command
+  * @param  None
+  * @retval None
+  */
 void set_help(void)
 {
     terminalOut((char *) "EEPROM Parameters are:");
@@ -410,13 +446,13 @@ void set_help(void)
     // TODO add more set command help here
 }
 
-//===================================================================
-//                              SET Command
-//
-// set <parameter> <value>
-// 
-// Supported parameters: 
-//===================================================================
+/**
+  * @name   setCmd
+  * @brief  Set a parameter (seeing) in EEPROM
+  * @param  arg 1 = parameter name
+  * @param  arg 2 = value to set
+  * @retval None
+  */
 int setCmd(int arg)
 {
     char          *parameter = tokens[1];
@@ -440,7 +476,7 @@ int setCmd(int arg)
           EEPROMData.status_delay_secs = iValue;
         }
     }
-    else if ( strcmp(parameter, "pwrdelay") == 0 )
+    else if ( strcmp(parameter, "pdelay") == 0 )
     {
         iValue = valueEntered.toInt();
         if (EEPROMData.pwr_seq_delay_msec != iValue )
@@ -462,3 +498,34 @@ int setCmd(int arg)
     return(0);
 
 } // setCmd()
+
+/**
+  * @name   pwrCmd
+  * @brief  Bring up AUX and MAIN power to NIC 3.0 board
+  * @param  None
+  * @retval None
+  * @note   Delay is changed with 'set pdelay <msec>'
+  */
+int pwrCmd(int argCnt)
+{
+    if ( readPin(OCP_MAIN_PWR_EN) == 0 && readPin(OCP_AUX_PWR_EN) == 0 )
+    {
+        sprintf(outBfr, "Starting NIC power up sequence, delay = %d msec", EEPROMData.pwr_seq_delay_msec);
+        SHOW();
+        writePin(OCP_MAIN_PWR_EN, 1);
+        delay(EEPROMData.pwr_seq_delay_msec);
+        writePin(OCP_AUX_PWR_EN, 1);
+        terminalOut((char *) "Sequence complete");
+    }
+    else if ( readPin(OCP_MAIN_PWR_EN) == 1 && readPin(OCP_AUX_PWR_EN) == 1 )
+    {
+        terminalOut("Powering down NIC card");
+        writePin(OCP_MAIN_PWR_EN, 0);
+        writePin(OCP_AUX_PWR_EN, 0);
+    }
+    else
+    {
+        sprintf(outBfr, "Power pins unexpected state; MAIN: %d AUX: %d", readPin(OCP_MAIN_PWR_EN), readPin(OCP_AUX_PWR_EN));
+        SHOW();
+    }
+}

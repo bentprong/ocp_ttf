@@ -3,17 +3,19 @@ Dell OCP NIC 3.0 Thermal Test Fixture
 Written by Richard Lewis rlewis@astlenterprises.com for Fusion Manufacturing Services 
    rick@fmspcb.com is my email address at Fusion.
 Posted February 18, 2023 at https://github.com/bentprong/ocp_ttf
-Initial Firmware Release: v1.0.4
+Initial Firmware Release: v1.0.5 (March 9, 2023)
+
+Release v1.0.5 Notes
+====================
+1. Support for Visual Studio Code & Platform IO is incomplete; only flashing of the firmware
+image using Microchip studio is supported at this time. 
+2. Scan chain query is not yet implemented.
 
 Overview
 ========
 These instructions have been tested on Windows and Mac.  If you are using a variant of Linux, the
 instructions for Mac should apply except possibly for the "screen" terminal emulator program.  At
 a minimum you need to select a Linux terminal emulation program and open the USB TTY with it.
-
-This project was initially cloned from the OCP Xavier project.  Primary reason for cloning that
-project was to re-use the USB serial code that was working, plus the simulated EEPROM and CLI 
-as well as the FRU EEPROM code.
 
 The project is built using the PlatformIO extension for Visual Studio Code.  An ATMEL-ICE was
 used to debug the code on the board and can be used to program the binary using Microchip Studio.
@@ -23,19 +25,24 @@ Operating Instructions
 Enter the 'help' command to get a list of the available commands, and details about usage of
 each command.
 
-The simulated EEPROM (in FLASH) was inherited from Vulcan but is not currently used.  You can
-verify that it is operational by entering 'debug eeprom' command.
+The simulated EEPROM (in FLASH) is used to store 2 settings:
+   sdelay - delay in seconds between status screen updates [default 3]
+   pdelay - delay in milliseconds between asserting MAIN_EN and AUX_EN signals to power up
+       the NIC 3.0 board [default 250]
 
 Do  not confuse this simulated EEPROM with the FRU EEPROM on a NIC 3.0 board.  The command to
 access FRU EEPROM contents is just 'eepom' (see help for more).
 
-The signature of the simulated EEPROM should always be DE110C02.  
+The signature of the simulated EEPROM should always be DE110C03.  Decoded, this means:
+   "DE11" = Dell
+   "0C" = Open Compute
+   "03" = 3rd OCP project (TTF); 01=Vulcan, 02=Xavier
 
 --------------------------------------------------------------------------------------------------
-WARNING: Loading the board with (new) firmware WILL erase the EEPROM and you will need to re-enter
-the settings afterwards.  The board may display "EEPROM Validation Failed..." to indicate that
-this has happened, but it is a good practice to always enter the settings after flashing the
-board's firmware.  There are no settings defined as of the initial release of the firmware.
+WARNING: Flasing the board with (new) firmware WILL erase the EEPROM and you will need to re-enter
+the settings afterwards.  The board will display "EEPROM Validation Failed..." to indicate that
+this has happened, but it is a good practice to always check the settings after flashing the
+board's firmware.  See [defaults] listed above.
 --------------------------------------------------------------------------------------------------
 
 Tips:
@@ -55,13 +62,14 @@ The purpose of the board is to provide support for thermal testing of NIC 3.0 ca
 Development Environment Setup
 =============================
 
-This varies slightly between platforms including Mac, Linux and Windows.
+This varies slightly between platforms including Mac, Linux and Windows.  This is NOT needed if you only want to
+flash the firmware into a board - see Binary Executable Instructions below in that case.
 
 1. Download and install Visual Studio Code.
 
-2. In VS Code ("VSC"), go to Extensions and seach for "platformio" and install it.  This will take some time,
-watch the status area in the bottom right of VSC for progress.  Note that PlatformIO ("PIO") also installs the C/C++ 
-extension which is needed.
+2. In VS Code ("VSC"), go to Extensions and seach for "platformio" and install it.  This will take some time, so
+watch the status area in the bottom right of VSC for progress.  Note that PlatformIO ("PIO") also installs C/C++ 
+extensions which are needed.
 
 When finished you will see a prompt "Please restart VSCode" so do that.
 
@@ -71,28 +79,30 @@ already have/know a tool that will allow you to clone and manage a GitHub reposi
 
 3. Set up a Projects folder if you don't already have one.  For these instructions it is assumed that this is
 <home>/Documents/Projects.  VSC "may" be able to accomodate other directory structures, but of course, those
-cannot and have not been tested.
+have not been tested.
 
     Windows:  <home> = C:/Users/<username>
     Mac:      <home> = Users/<username>
 
-4. Log into GitHub.com using your own credentials then clone this repository: 
+4. Log into GitHub.com using your OWN PERSONAL credentials then clone this repository: 
     bentprong/ocp_ttf 
     
 into your Projects folder.  Eg, <home>/Documents/Projects/ocp_ttf
 
     GitHub Requirements:
-        a. SSH key generated and installed on this (your) computer for YOU
+        a. SSH key generated and installed on this (YOUR) computer for YOU (new GitHub requirement)
         b. SSH key for YOU installed in YOUR GitHub.com account
 
 5. In VSC, choose File | Open Folder... and navigate to <home>/<Projects>/ocp_ttf then highlight that, and
 click Select Folder.
 
 6. In VSC, click the checkmark in the blue bar at the bottom to build.  This should install necessary files, 
-libraries and tools.  It may take quite a bit of time.
+libraries and tools.  It may take quite a bit of time.  This builds the release code - not debug code. The
+release code is flashed to the board using Microchip Studio usually, while the debug code is used by VSC/PIO
+for debugging purposes.
 
 7. In the repo folder platformio, open the README file and follow the instructions to configure PIO for the
-TTF board.  There are 2 steps to this process explained in the README.
+TTF board.  There are 2 steps to this process that are explained in the README.
 
 --------------------------------------------------------------------------------------------------
 ** FLASHING NOTE ** Failure to exactly follow the instructions in the README in step #7 will
@@ -111,24 +121,8 @@ for 3.3V and one for 12V.  These 2 LEDs are near the Power connector.  If either
 exists in one or both power supplies.  These 2 LEDs should always be on.
 
 A third LED may be lit if a NIC 3.0 board is inserted into the bay and the power is good to that board. 
-This is the OCP_PWR_GOOD LED.
-
-A fourth MCU_LED near the P-UART1 connector should be fast blinking (4-5 times a second).  This 
-means that the board has initialized OK and is waiting on a USB/serial connection.
-
-If the MCU_LED is on solid, an initialization error occured.  Best bet is to program the board again.
-If all LEDs are off, then the board is not receiving any power.  Check the USB
-cable and that it is firmly in the USB connector.
-
-NOTE: The board is supposed to be able to be powered from USB 5V, if the SW_DEV_PWR jumper is
-installed.  However, that does not appear to work.
-
-Once a connection is made, the MCU_LED will slow blink to indicate a heartbeat from the board and
-firmware.
-
-If the MCU_LED is off, the board firmware never started up.   The firmware turns this LED on when it
-first starts, then it initializes itself and the harware, then it starts fast blinking unless errors
-were encountered in which case it stays on.
+This is the OCP_PWR_GOOD LED.  UPDATE: The NIC 3.0 board is now no longer powered up when the TTF
+board is powered up.  Use the 'power' command to power up the NIC 3.0 board.
 
 Build/Debug Instructions
 ========================
@@ -137,11 +131,17 @@ stop in main() at the init() call.   Click the blue |> icon in the debugger cont
 
 Binary Executable Instructions
 ==============================
+
+This section is not supported in v1.0.5:
 In VSC, click the checkmark in the blue line at the bottom to build a firmware release.  If no problems
 are reported (there should be none), the executable is located here:
     <home>/Projects/ocp-ttf/.pio/build/samd21g18a/firmware.bin
 
 Note that in this same location is also the firmware.elf file which is the debug version of firmware.
+
+v1.0.5 Supported Section:
+Firmware is prebuilt in GitHub aand located at:
+    bentprong/ocp_ttf/.pio/build/samd21g18a/firmware.bin
 
 Use any flash utility such as Microchip Studio to erase and burn this .bin file into the TTF board.
 
@@ -184,12 +184,11 @@ as shown in the Mac section above to find the USBn device, then enter the comman
 "screen /dev/ttyUSB0 115200" if the connection is on ttyUSB0.  For minicom, please search online
 for a tutorial on installation and usage.
 
-Known Issue
-===========
-Some characters are lost sometimes in the serial terminal.  Workaround: execute the command again. The 
-frequency of occurence of this varies between operating systems and seems to be worse on Windows.
+Issues
+======
+In GitHub.com, click on the "Issues" link next to "<> Code" to view any outstanding Issues. All
+other issues are tracked in GitHub.  Please feel free to open new issues but first check that that
+issue is not already reported.
 
-Importantly, in GitHub.com, click on the Issue link next to <> Code to view any outstanding Issues. All
-other issues are tracked in GitHub.
-
+https://github.com/bentprong/ocp_ttf/issues
 

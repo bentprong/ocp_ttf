@@ -141,9 +141,11 @@ void debug_reset(void)
 void debug_dump_eeprom(void)
 {
     terminalOut((char *) "EEPROM Contents:");
-    sprintf(outBfr, "Signature:           %08X", (unsigned int) EEPROMData.sig);
+    sprintf(outBfr, "Signature:                            %08X", (unsigned int) EEPROMData.sig);
     terminalOut(outBfr);
-    sprintf(outBfr, "Status delay (secs): %d", EEPROMData.status_delay_secs);
+    sprintf(outBfr, "sdelay - status refresh delay (secs): %d", EEPROMData.status_delay_secs);
+    SHOW();
+    sprintf(outBfr, "pdelay - power delay (msec):          %d", EEPROMData.pwr_seq_delay_msec);
     SHOW();
 
     // TODO add more fields
