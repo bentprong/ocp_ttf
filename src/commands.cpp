@@ -63,7 +63,6 @@ void readAllPins(void);
 void configureIOPins(void)
 {
   pin_size_t        pinNo;
-  uint8_t           pinFunc;
 
   for ( int i = 0; i < static_pin_count; i++ )
   {
@@ -206,7 +205,6 @@ int pinCmd(int arg)
 {
     int         count = static_pin_count;
     int         index = 0;
-    uint8_t     pinNo;
 
     terminalOut((char *) " ");
     terminalOut((char *) " #           Pin Name   D/S              #        Pin Name      D/S ");
@@ -225,7 +223,6 @@ int pinCmd(int arg)
       }
       else
       {
-          pinNo = staticPins[index].pinNo;
           sprintf(outBfr, "%2d %20s %c %d\t\t%2d %20s %c %d ", 
                   staticPins[index].pinNo, staticPins[index].name, 
                   getPinChar(index), readPin(staticPins[index].pinNo),
@@ -457,7 +454,7 @@ int setCmd(int arg)
 {
     char          *parameter = tokens[1];
     String        valueEntered = tokens[2];
-    float         fValue;
+//    float         fValue;
     int           iValue;
     bool          isDirty = false;
 
@@ -487,12 +484,12 @@ int setCmd(int arg)
     }
     else
     {
-        terminalOut("Invalid parameter name");
+        terminalOut((char *) "Invalid parameter name");
         set_help();
         return(1);
     }
 
-    if ( isDirty )
+    if ( isDirty == true )
         EEPROM_Save();
 
     return(0);
@@ -501,31 +498,61 @@ int setCmd(int arg)
 
 /**
   * @name   pwrCmd
-  * @brief  Bring up AUX and MAIN power to NIC 3.0 board
-  * @param  None
+  * @brief  Control AUX and MAIN power to NIC 3.0 board
+  * @param  argCnt  number of arguments
+  * @param  subcmd  up or down
   * @retval None
   * @note   Delay is changed with 'set pdelay <msec>'
   */
 int pwrCmd(int argCnt)
 {
-    if ( readPin(OCP_MAIN_PWR_EN) == 0 && readPin(OCP_AUX_PWR_EN) == 0 )
+    int             rc = 0;
+    bool            isPowered = false;
+
+    if ( readPin(OCP_MAIN_PWR_EN) == 1 && readPin(OCP_AUX_PWR_EN) == 1 )
+        isPowered = true;
+
+    if ( argCnt == 0 )
     {
-        sprintf(outBfr, "Starting NIC power up sequence, delay = %d msec", EEPROMData.pwr_seq_delay_msec);
+        sprintf(outBfr, "NIC card is powered %s", (isPowered) ? "up" : "down");
         SHOW();
-        writePin(OCP_MAIN_PWR_EN, 1);
-        delay(EEPROMData.pwr_seq_delay_msec);
-        writePin(OCP_AUX_PWR_EN, 1);
-        terminalOut((char *) "Sequence complete");
+        return(rc);
     }
-    else if ( readPin(OCP_MAIN_PWR_EN) == 1 && readPin(OCP_AUX_PWR_EN) == 1 )
+
+    if ( strcmp(tokens[1], "up") == 0 )
     {
-        terminalOut("Powering down NIC card");
-        writePin(OCP_MAIN_PWR_EN, 0);
-        writePin(OCP_AUX_PWR_EN, 0);
+        if ( isPowered == false )
+        {
+            sprintf(outBfr, "Starting NIC power up sequence, delay = %d msec", EEPROMData.pwr_seq_delay_msec);
+            SHOW();
+            writePin(OCP_MAIN_PWR_EN, 1);
+            delay(EEPROMData.pwr_seq_delay_msec);
+            writePin(OCP_AUX_PWR_EN, 1);
+            terminalOut((char *) "Sequence complete");
+        }
+        else
+        {
+            terminalOut((char *) "Power is already down on NIC card");
+        }
+    }
+    else if ( strcmp(tokens[1], "down") == 0 )
+    {
+        if ( isPowered == true )
+        {
+            writePin(OCP_MAIN_PWR_EN, 0);
+            writePin(OCP_AUX_PWR_EN, 0);
+            terminalOut((char *) "Powered down NIC card");
+        }
+        else
+        {
+            terminalOut((char *) "Power is already up on NIC card");
+        }
     }
     else
     {
-        sprintf(outBfr, "Power pins unexpected state; MAIN: %d AUX: %d", readPin(OCP_MAIN_PWR_EN), readPin(OCP_AUX_PWR_EN));
-        SHOW();
+        terminalOut((char *) "Invalid argument: use 'up' or 'down'");
+        rc = 1;
     }
+
+    return(rc);
 }

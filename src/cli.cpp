@@ -11,7 +11,7 @@
 // Constant Data
 const char      cliPrompt[] = "ttf> ";
 const int       promptLen = sizeof(cliPrompt);
-const char      hello[] = "Dell NIC 3.0 Thermal Test Fixture V";
+const char      hello[] = "OCP NIC 3.0 Thermal Test Fixture V";
 
 // CLI token stack and formatting buffer
 char            *tokens[MAX_TOKENS];
@@ -48,7 +48,7 @@ cli_entry     cmdTable[CLI_COMMAND_CNT] = {
     {"debug",      debug,  -1, "Debug functions mostly for developer use.",      "Enter 'debug' with no arguments for more info."},
     {"eeprom", eepromCmd,  -1, "Displays FRU EEPROM info areas if no args.",     "'eeprom <addr> <length>' dumps <length> bytes @ <addr>"},
     {"pins",      pinCmd,   0, "Displays pin names and numbers.",                "NOTE: TTF uses Arduino-style pin numbering."},
-    {"power",     pwrCmd,   0, "Control AUX and MAIN power to NIC 3.0 board.",    "Uses pdelay setting for delay between signals being asserted."},
+    {"power",     pwrCmd,  -1, "Control AUX and MAIN power to NIC 3.0 board.",    "'power <up|down>' Uses pdelay setting for delay between signals being asserted."},
     {"read",     readCmd,   1, "Read input pin (Arduino numbering).",            "'read <pin_number>'"},
     {"set",       setCmd,  -1, "Set EEPROM parameter to a value.",               "'set <param> <value>' sets value; or 'set' with no args for help."},
     {"status", statusCmd,   0, "Displays status of I/O pins etc.",               " "},

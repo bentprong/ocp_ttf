@@ -1,8 +1,8 @@
 //===================================================================
 // main.cpp
 //
-// Contains setup() initialization and main program loop() for a
-// Dell OCP Project that uses SAMD21G18A.  This file and the 2
+// Contains setup() initialization and main program loop() for an
+// OCP Project that uses SAMD21G18A.  This file and the 2
 // functions contained in it are generic.  See cli.cpp and commands.cpp
 // for project-specific code.
 //===================================================================

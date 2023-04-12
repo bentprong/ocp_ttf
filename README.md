@@ -1,8 +1,15 @@
-# Dell OCP NIC 3.0 Thermal Test Fixture
-Written by Richard Lewis rlewis@astlenterprises.com for Fusion Manufacturing Services 
-   rick@fmspcb.com. 
+# OCP NIC 3.0 Thermal Test Fixture
+Written by Richard Lewis for Fusion Manufacturing Services; author contact:
+    rick@fmspcb.com
+    rlewis@astlenterprises.com
 Posted February 18, 2023 at [GitHub](https://github.com/bentprong/ocp_ttf)
 Initial Firmware Release: v1.0.5 (March 9, 2023)
+
+## Release v1.0.6 Notes (April 12, 2023)
+1. Removed "Dell" everywhere, replaced with "OCP"
+2. Modified 'power' command: if no arg, showns NIC card power status; else use 'up' or 'down'
+3. Initiating GitHub branching: released code will be in main branch, code in development
+   will be in develop branch.
 
 ## Release v1.0.5 Notes
 1. Scan chain query is not yet implemented.
@@ -32,7 +39,7 @@ Do  not confuse this simulated EEPROM with the FRU EEPROM on a NIC 3.0 board.  T
 access FRU EEPROM contents is just 'eepom' (see help for more).
 
 The signature of the simulated EEPROM should always be DE110C03.  Decoded, this means:
-   "DE11" = Dell
+   "DE11" = project ID
    "0C" = Open Compute
    "03" = 3rd OCP project (TTF); 01=Vulcan, 02=Xavier
 
@@ -131,7 +138,7 @@ Firmware is prebuilt in GitHub and located at:
 Use any flash utility such as Microchip Studio to erase and flash this .bin file into the TTF board.
 
 NOTE: PIO "upload" does not work because there is intentionally no bootloader on the TTF board.  At this
-time, Dell OCP does not support Arduino sketches.
+time, this OCP project does not support Arduino sketches.
 
 ## Building Release Firmware
 In VSC, click the checkmark in the blue line at the bottom to build a firmware release.  If no problems

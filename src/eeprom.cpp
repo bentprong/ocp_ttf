@@ -13,9 +13,9 @@
 extern const uint16_t   static_pin_count;
 extern char             *tokens[];
 static char             outBfr[OUTBFR_SIZE];
-const uint32_t          EEPROM_signature = 0xDE110C03;              // the hex means "DEll Open Compute 03 (TTF)"
-uint8_t                 eepromAddresses[4] = {0x50, 0x52, 0x54, 0x56};    // NOTE: these DO NOT match Table 67
-const uint32_t          jan1996 = 820454400;                        // epoch time (secs) of 1/1/1996 00:00
+const uint32_t          EEPROM_signature = 0xDE110C03;
+uint8_t                 eepromAddresses[4] = {0x50, 0x52, 0x54, 0x56};      // NOTE: these DO NOT match Table 67
+const uint32_t          jan1996 = 820454400;                                // epoch time (secs) of 1/1/1996 00:00
 
 // FLASH/EEPROM Data buffer
 EEPROM_data_t           EEPROMData;
@@ -333,7 +333,7 @@ int eepromCmd(int arg)
     // nor is the check for the 0xC1 terminator checked
 
 #if 0
-// See GitHub Issue #4 (Need Dell decision on FRU EEPROM 'other areas'
+// See GitHub Issue #4 (Need a decision on FRU EEPROM 'other areas'
     // read the product area header
     eepromAddr = EEPROMDescriptor.product_area_offset_actual;
     readEEPROM(eepromI2CAddr, eepromAddr, (uint8_t *) &prodHeader, sizeof(prod_hdr_t));
