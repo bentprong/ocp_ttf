@@ -37,23 +37,24 @@ int debug(int arg);
 int statusCmd(int arg);
 int eepromCmd(int arg);
 int pwrCmd(int arg);
+int versCmd(int arg);
 
 // CLI command table
 // CLI_COMMAND_CNT is defined in cli.hpp
 // format is "command", function, required arg count, "help line 1", "help line 2" 
-// NOTE: -1 as arg count means "don't check arguments"
+// NOTE: -1 as arg count means "don't check number of arguments, cmd function will"
 // NOTE: " " (space) on 2nd line of help doesn't display anything (for short helps)
 // NOTE: These are in alphabetical order for presentation (except help) FYI...
 cli_entry     cmdTable[CLI_COMMAND_CNT] = {
-    {"debug",      debug,  -1, "Debug functions mostly for developer use.",      "Enter 'debug' with no arguments for more info."},
-    {"eeprom", eepromCmd,  -1, "Displays FRU EEPROM info areas if no args.",     "'eeprom <addr> <length>' dumps <length> bytes @ <addr>"},
-    {"pins",      pinCmd,   0, "Displays pin names and numbers.",                "NOTE: TTF uses Arduino-style pin numbering."},
-    {"power",     pwrCmd,  -1, "Control AUX and MAIN power to NIC 3.0 board.",    "'power <up|down>' Uses pdelay setting for delay between signals being asserted."},
+    {"eeprom", eepromCmd,  -1, "'eeprom show' displays FRU EEPROM info areas.",  "'eeprom dump <addr> <length>' dumps <length> bytes @ <addr>"},
+    {"pins",      pinCmd,   0, "Displays pin names and numbers.",                "TTF uses Arduino-style pin numbering shown in this display."},
+    {"power",     pwrCmd,  -1, "Control power to NIC 3.0 board.",                "'power <up|down> <main|aux|card>' or 'power status' "},
     {"read",     readCmd,   1, "Read input pin (Arduino numbering).",            "'read <pin_number>'"},
-    {"set",       setCmd,  -1, "Set EEPROM parameter to a value.",               "'set <param> <value>' sets value; or 'set' with no args for help."},
+    {"set",       setCmd,  -1, "Set FLASH parameter to a value.",                "'set <param> <value>' sets value; or 'set' with no args for help."},
     {"status", statusCmd,   0, "Displays status of I/O pins etc.",               " "},
+    {"vers",     versCmd,   0, "Shows firmware version information.",            " "},
     {"write",   writeCmd,   2, "Write output pin (Arduino numbering).",          "'write <pin_number> <0|1>'"},
-
+    {"xdebug",     debug,  -1, "Debug functions mostly for developer use.",      "Enter 'xdebug' with no arguments for more info."},
     {"help",        help,   0, "NOTE: THIS DOES NOT DISPLAY ON PURPOSE",         " "},    
 };
 
@@ -271,4 +272,29 @@ int help(int arg)
     }
 
     return(0);
+}
+
+/**
+  * @name   showCommandHelp
+  * @brief  show help for given command
+  * @param  cmd command to search for
+  * @retval None
+  */
+void showCommandHelp(char *cmd)
+{
+    for ( int i = 0; i < (int) CLI_COMMAND_CNT; i++ )
+    {
+      if ( strcmp(cmdTable[i].cmd, "help") == 0 )
+        continue;
+
+      if ( strcmp(cmd, cmdTable[i].cmd) == 0 )
+      {
+        terminalOut(cmdTable[i].help1);
+
+        if ( cmdTable[i].help2[0] != ' ' )
+        {
+          terminalOut(cmdTable[i].help2);
+        }          
+      }
+    }
 }
