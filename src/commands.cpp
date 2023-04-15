@@ -9,6 +9,7 @@
 //===================================================================
 #include "main.hpp"
 #include "eeprom.hpp"
+#include "commands.hpp"
 #include <math.h>
 
 extern char             *tokens[];
@@ -437,20 +438,27 @@ int8_t getPinIndex(uint8_t pinNo)
   */
 void set_help(void)
 {
-    terminalOut((char *) "EEPROM Parameters are:");
-    terminalOut((char *) "  sdelay <int> ........ status display delay in seconds");
+    terminalOut((char *) "FLASH Parameters are:");
+    sprintf(outBfr, "  sdelay <integer> - status display delay in seconds; current: %d", EEPROMData.status_delay_secs);
+    terminalOut(outBfr);
+    sprintf(outBfr, "  pdelay <integer> - power up sequence delay in milliseconds; current: %d", EEPROMData.pwr_seq_delay_msec);
+    terminalOut(outBfr);
+    terminalOut((char *) "'set <parameter> <value>' sets a parameter from list above to value");
+    terminalOut((char *) "  value can be <integer>, <string> or <float> depending on the parameter");
 
     // TODO add more set command help here
 }
 
 /**
   * @name   setCmd
-  * @brief  Set a parameter (seeing) in EEPROM
+  * @brief  Set a parameter (seeing) in FLASH
   * @param  arg 1 = parameter name
   * @param  arg 2 = value to set
-  * @retval None
+  * @retval 0
+  * @note   no args shows help w/current values
+  * @note   simulated EEPROM is called FLASH to the user
   */
-int setCmd(int arg)
+int setCmd(int argCnt)
 {
     char          *parameter = tokens[1];
     String        valueEntered = tokens[2];
@@ -458,7 +466,12 @@ int setCmd(int arg)
     int           iValue;
     bool          isDirty = false;
 
-    if ( arg == 0 )
+    if ( argCnt == 0 )
+    {
+        set_help();
+        return(0);
+    }
+    else if ( argCnt != 2 )
     {
         set_help();
         return(0);
@@ -496,63 +509,197 @@ int setCmd(int arg)
 
 } // setCmd()
 
+static void pwrCmdHelp(void)
+{
+    terminalOut((char *) "Usage: power <up | down | status> <main | aux | card>");
+    terminalOut((char *) "  'power status' requires no argument and shows the power status of NIC card");
+    terminalOut((char *) "  main = MAIN_EN to NIC card; aux = AUX_EN to NIC card; ");
+    terminalOut((char *) "  card = MAIN_EN=1 then pdelay msecs then AUX_EN=1; see 'set' command for pdelay");
+}
+
 /**
   * @name   pwrCmd
   * @brief  Control AUX and MAIN power to NIC 3.0 board
   * @param  argCnt  number of arguments
-  * @param  subcmd  up or down
-  * @retval None
+  * @param  tokens[1]  up, down or status
+  * @param  tokens[2]   main, aux or card
+  * @retval 0   OK
+  * @retval 1   error
   * @note   Delay is changed with 'set pdelay <msec>'
+  * @note   power <up|down|status> <main|aux|board> status has no 2nd arg
   */
 int pwrCmd(int argCnt)
 {
     int             rc = 0;
     bool            isPowered = false;
-
-    if ( readPin(OCP_MAIN_PWR_EN) == 1 && readPin(OCP_AUX_PWR_EN) == 1 )
-        isPowered = true;
+    uint8_t         mainPin = readPin(OCP_MAIN_PWR_EN);
+    uint8_t         auxPin = readPin(OCP_AUX_PWR_EN);
 
     if ( argCnt == 0 )
     {
-        sprintf(outBfr, "NIC card is powered %s", (isPowered) ? "up" : "down");
-        SHOW();
-        return(rc);
+        pwrCmdHelp();
+        return(1);
+    }
+
+    if (  mainPin == 1 &&  auxPin == 1 )
+        isPowered = true;
+
+    if ( argCnt == 1 )
+    {
+        if ( strcmp(tokens[1], "status") == 0 )
+        {
+            sprintf(outBfr, "Status: NIC card is powered %s", (isPowered) ? "up" : "down");
+            SHOW();
+            return(rc);
+        }
+        else
+        {
+            terminalOut((char *) "Incorrect number of command arguments");
+            pwrCmdHelp();
+            return(1);
+        }
+    }
+    else if ( argCnt != 2 )
+    {
+        terminalOut((char *) "Incorrect number of command arguments");
+        pwrCmdHelp();
+        return(1);
     }
 
     if ( strcmp(tokens[1], "up") == 0 )
     {
-        if ( isPowered == false )
+        if ( strcmp(tokens[2], "card") == 0 )
         {
-            sprintf(outBfr, "Starting NIC power up sequence, delay = %d msec", EEPROMData.pwr_seq_delay_msec);
-            SHOW();
-            writePin(OCP_MAIN_PWR_EN, 1);
-            delay(EEPROMData.pwr_seq_delay_msec);
-            writePin(OCP_AUX_PWR_EN, 1);
-            terminalOut((char *) "Sequence complete");
+            if ( isPowered == false )
+            {
+                sprintf(outBfr, "Starting NIC power up sequence, delay = %d msec", EEPROMData.pwr_seq_delay_msec);
+                SHOW();
+                writePin(OCP_MAIN_PWR_EN, 1);
+                delay(EEPROMData.pwr_seq_delay_msec);
+                writePin(OCP_AUX_PWR_EN, 1);
+                queryScanChain();
+                terminalOut((char *) "Power up sequence complete");
+            }
+            else
+            {
+                terminalOut((char *) "Power is already up on NIC card");
+            }
+        }
+        else if ( strcmp(tokens[2], "main") == 0 )
+        {
+            if ( mainPin == 1 )
+            {
+                terminalOut((char *) "MAIN_EN is already 1");
+                return(0);
+            }
+            else
+            {
+                writePin(OCP_MAIN_PWR_EN, 1);
+                terminalOut((char *) "Set MAIN_EN to 1");
+                return(0);
+            }
+        }
+        else if ( strcmp(tokens[2], "aux") == 0 )
+        {
+            if ( auxPin == 1 )
+            {
+                terminalOut((char *) "AUX_EN is already 1");
+                return(0);
+            }
+            else
+            {
+                writePin(OCP_AUX_PWR_EN, 1);
+                terminalOut((char *) "Set AUX_EN to 1");
+                return(0);
+            }
         }
         else
         {
-            terminalOut((char *) "Power is already down on NIC card");
+            terminalOut((char *) "Invalid argument");
+            pwrCmdHelp();
+            return(1);
         }
     }
     else if ( strcmp(tokens[1], "down") == 0 )
     {
-        if ( isPowered == true )
+        if ( strcmp(tokens[2], "card") == 0 )
         {
-            writePin(OCP_MAIN_PWR_EN, 0);
-            writePin(OCP_AUX_PWR_EN, 0);
-            terminalOut((char *) "Powered down NIC card");
+            if ( isPowered == true )
+            {
+                writePin(OCP_MAIN_PWR_EN, 0);
+                writePin(OCP_AUX_PWR_EN, 0);
+                terminalOut((char *) "Powered down NIC card");
+            }
+            else
+            {
+                terminalOut((char *) "Power is already down on NIC card");
+            }
+        }
+        else if ( strcmp(tokens[2], "main") == 0 )
+        {
+            if ( mainPin == 0 )
+            {
+                terminalOut((char *) "MAIN_PWR_EN is already 0");
+                return(0);
+            }
+            else
+            {
+                writePin(OCP_MAIN_PWR_EN, 0);
+                terminalOut((char *) "Set MAIN_PWR_EN to 0");
+                return(0);
+            }
+        }
+        else if ( strcmp(tokens[2], "aux") == 0 )
+        {
+            if ( auxPin == 0 )
+            {
+                terminalOut((char *) "AUX_PWR_EN is already 0");
+                return(0);
+            }
+            else
+            {
+                writePin(OCP_AUX_PWR_EN, 0);
+                terminalOut((char *) "Set AUX_PWR_EN to 0");
+                return(0);
+            }
         }
         else
         {
-            terminalOut((char *) "Power is already up on NIC card");
+            terminalOut((char *) "Invalid argument");
+            pwrCmdHelp();
+            return(1);
         }
     }
     else
     {
-        terminalOut((char *) "Invalid argument: use 'up' or 'down'");
+        terminalOut((char *) "Invalid subcommand: use 'up', 'down' or 'status'");
         rc = 1;
     }
 
     return(rc);
+}
+
+/**
+  * @name   versCmd
+  * @brief  Displays firmware version
+  * @param  arg not used
+  * @retval None
+  */
+int versCmd(int arg)
+{
+    sprintf(outBfr, "Firmware version %s built on %s at %s", VERSION_ID, BUILD_DATE, BUILD_TIME);
+    terminalOut(outBfr);
+    return(0);
+}
+
+/**
+  * @name   queryScanChain
+  * @brief  extract info from scan chain output
+  * @param  None
+  * @retval None
+  */
+void queryScanChain(void)
+{
+    // TODO implementation
+    terminalOut((char *) "Scan chain info not available");
 }

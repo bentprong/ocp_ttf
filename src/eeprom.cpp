@@ -10,6 +10,9 @@
 #include "eeprom.hpp"
 #include "cli.hpp"
 
+// uncomment line below to enable hex dumps of EEPROM regions
+//#define EEPROM_DEBUG 1
+
 extern const uint16_t   static_pin_count;
 extern char             *tokens[];
 static char             outBfr[OUTBFR_SIZE];
@@ -203,7 +206,9 @@ uint16_t extractField(char *t, uint16_t field_offset)
 }
 
 // --------------------------------------------
-// eepromCmd() - 'eeprom' command
+// eepromCmd() - 'eeprom' command works on FRU
+// EEPROM only; simulated EEPROM is called 
+// FLASH to user.
 // --------------------------------------------
 int eepromCmd(int arg)
 {
@@ -216,27 +221,74 @@ int eepromCmd(int arg)
     time_t            t;
 
     // read the slot ID, which determines the FRU EEPROM I2C address
-    // NOTE: Slot ID pins are tied to ground on TTF
+    // NOTE: Slot ID pins are tied to ground on TTF so zero here
+    // TODO: Use slot ID as board rev?
     slot = 0;
+
     if ( slot >= 0 && slot <= 3 )
-      eepromI2CAddr = eepromAddresses[slot];
-
-    if ( arg == 2 )
     {
-        // 'eeprom <offset> <length>' command dumps FRU EEPROM at offset for length bytes
-        uint16_t        length = atoi(tokens[2]);
-        uint16_t        offset = atoi(tokens[1]);
+        eepromI2CAddr = eepromAddresses[slot];
+    }
+    else
+    {
+        terminalOut((char *) "Invalid slot ID, cannot determine EEPROM I2C address");
+        return(1);
+    }
 
-        readEEPROM(eepromI2CAddr, offset, EEPROMBuffer, length);
-        dumpMem(EEPROMBuffer, length);
-        return(0);
+    if ( arg == 1 )
+    {
+        if ( strcmp(tokens[1], "show") != 0 )
+        {
+            terminalOut((char *) "Invalid subcommand, use 'show' to display EEPROM contents.");
+            return(1);
+        }
+    }
+    else if ( arg == 3 )
+    {
+        if ( strcmp(tokens[1], "dump") == 0 )
+        {
+            // 'eeprom dump <offset> <length>' command dumps FRU EEPROM at offset for length bytes
+            uint16_t        offset = atoi(tokens[2]);
+            uint16_t        length = atoi(tokens[3]);
+
+            if ( offset > MAX_EEPROM_ADDR )
+            {
+                sprintf(outBfr, "offset of %d exceeds EEPROM capacity, use a smaller number", offset);
+                SHOW();
+                return(1);
+            }
+
+            if ( length > (16 * 20) )
+            {
+                sprintf(outBfr, "length of %d exceeds maximum, use a smaller number", length);
+                SHOW();
+                return(1);
+            }
+
+            readEEPROM(eepromI2CAddr, offset, EEPROMBuffer, length);
+            dumpMem(EEPROMBuffer, length);
+            return(0);
+        }
+        else
+        {
+            sprintf(outBfr, "Invalid eeprom subcommand '%s'", tokens[1]);
+            SHOW();
+            return(1);
+        }
+    }
+    else
+    {
+        showCommandHelp(tokens[0]);
+        return(1);
     }
 
     // the first byte in the EEPROM should be a 1 which is the format version
+    // TODO: this may evolve over time and the code below need to be refactored
     readEEPROM(eepromI2CAddr, 0, EEPROMBuffer, 1);
     if ( EEPROMBuffer[0] != 1 )
     {
-        sprintf(outBfr, "Unable to locate FRU EEPROM");
+        sprintf(outBfr, "Unable to locate FRU EEPROM at expected SMB address 0x%02X", eepromI2CAddr);
+        SHOW();
         return(0);
     }
 
@@ -245,8 +297,10 @@ int eepromCmd(int arg)
 
     // read common header
     readEEPROM(eepromI2CAddr, eepromAddr, (byte *) &commonHeader, sizeof(common_hdr_t));
-//    dumpMem((unsigned char *) &commonHeader, sizeof(common_hdr_t));
 
+#ifdef EEPROM_DEBUG
+    dumpMem((unsigned char *) &commonHeader, sizeof(common_hdr_t));
+#endif
     terminalOut((char *) "--- COMMON HEADER DATA");
     sprintf(outBfr, "Format version:  %d", commonHeader.format_vers & 0xF);
     SHOW();
@@ -267,17 +321,18 @@ int eepromCmd(int arg)
     sprintf(outBfr, "Board Area:      %d", EEPROMDescriptor.board_area_offset_actual);
     SHOW();
 
-    sprintf(outBfr, "Product Area:    %d", EEPROMDescriptor.product_area_offset_actual);
+    sprintf(outBfr, "Product Area:    %d (not supported)", EEPROMDescriptor.product_area_offset_actual);
     SHOW();
 
-    sprintf(outBfr, "MRecord Area:    %d", EEPROMDescriptor.multirecord_area_offset_actual);
+    sprintf(outBfr, "MRecord Area:    %d (not supported)", EEPROMDescriptor.multirecord_area_offset_actual);
     SHOW();
 
     // read first 7 bytes of board info area "header" to determine length
     eepromAddr = EEPROMDescriptor.board_area_offset_actual;
     readEEPROM(eepromI2CAddr, eepromAddr, (byte *) &boardHeader, sizeof(board_hdr_t));
-//    dumpMem(EEPROMBuffer, sizeof(board_hdr_t));
-
+#ifdef EEPROM_DEBUG
+    dumpMem(EEPROMBuffer, sizeof(board_hdr_t));
+#endif
     EEPROMDescriptor.board_area_length = boardHeader.board_area_length * 8;
 
     terminalOut((char *) "--- BOARD AREA DATA");
@@ -300,8 +355,9 @@ int eepromCmd(int arg)
     // read the entire board area
     eepromAddr += sizeof(board_hdr_t);
     readEEPROM(eepromI2CAddr, eepromAddr, (byte *) &EEPROMBuffer, EEPROMDescriptor.board_area_length);
-//    dumpMem((unsigned char *) EEPROMBuffer, EEPROMDescriptor.board_area_length);
-
+#ifdef EEPROM_DEBUG
+    dumpMem((unsigned char *) EEPROMBuffer, EEPROMDescriptor.board_area_length);
+#endif
     field_offset = 0;
 
     // extract manufacturer name; type/lenth is last item in board header

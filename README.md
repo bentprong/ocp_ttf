@@ -5,13 +5,26 @@ Written by Richard Lewis for Fusion Manufacturing Services; author contact:
 Posted February 18, 2023 at [GitHub](https://github.com/bentprong/ocp_ttf)
 Initial Firmware Release: v1.0.5 (March 9, 2023)
 
+## Release v1.0.7 Notes (April 15, 2023)
+1. Changed power command to show help if no argument provided; added 'aux', 'main' and 'card' options to allow
+individual signals MAIN_EN and AUX_EN to be set or 'card' sets both as before
+2. Changed eeprom command to require a subcommand (show or dump); if no subcommand, it shows help.
+3. Changed set command to show current parameter values and help if no argument is provided
+4. Added EEPROM_DEBUG flag to eeprom.c to allow developers to select hex dumps of key EEPROM regions (not user)
+5. Added vers command to display firmware version and build date/time
+6. Improved exception handling and user error messages
+7. Changed 'EEPROM' when referring to simulated FLASH EEPROM to 'FLASH' to avoid confusion
+8. Changed debug command to xdebug and moved to the bottom of the help display
+9. Added function stub for upcoming scan chain query; currently shows info not available
+10. Fixed several previously-uncaught exception bugs
+
 ## Release v1.0.6 Notes (April 12, 2023)
 1. Removed "Dell" everywhere, replaced with "OCP"
 2. Modified 'power' command: if no arg, showns NIC card power status; else use 'up' or 'down'
 3. Initiating GitHub branching: released code will be in main branch, code in development
    will be in develop branch.
 
-## Release v1.0.5 Notes
+## Release v1.0.5 Notes (March 9, 2023)
 1. Scan chain query is not yet implemented.
 2. Only the Board Info Area of the FRU EEPROM is currently processed.  Comments welcome. See
    Issue # 9.

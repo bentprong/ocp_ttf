@@ -140,7 +140,7 @@ void debug_reset(void)
 // --------------------------------------------
 void debug_dump_eeprom(void)
 {
-    terminalOut((char *) "EEPROM Contents:");
+    terminalOut((char *) "FLASH Contents:");
     sprintf(outBfr, "Signature:                            %08X", (unsigned int) EEPROMData.sig);
     terminalOut(outBfr);
     sprintf(outBfr, "sdelay - status refresh delay (secs): %d", EEPROMData.status_delay_secs);
@@ -153,10 +153,10 @@ void debug_dump_eeprom(void)
 
 static void debug_help(void)
 {
-    terminalOut((char *) "Debug commands are:");
+    terminalOut((char *) "xdebug subcommands are:");
     terminalOut((char *) "\tscan ..... I2C bus scanner");
     terminalOut((char *) "\treset .... Reset board, requires reconnection to serial");
-    terminalOut((char *) "\teeprom ... Dump FLASH-simulated EEPROM");
+    terminalOut((char *) "\tflash .... Dump FLASH-simulated EEPROM parameters");
 
     // add new command help here
     // NOTE: debug stuff is not part of CLI so
@@ -189,7 +189,7 @@ int debug(int arg)
       debug_scan();
     else if ( strcmp(tokens[1], "reset") == 0 )
       debug_reset();
-    else if ( strcmp(tokens[1], "eeprom") == 0 )
+    else if ( strcmp(tokens[1], "flash") == 0 )
       debug_dump_eeprom();
     else
     {

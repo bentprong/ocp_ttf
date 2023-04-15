@@ -7,7 +7,9 @@
 #include <Arduino.h>
 #include "cli.hpp"
 
-#define VERSION_ID               "1.0.6"
+#define VERSION_ID               "1.0.7"
+#define BUILD_DATE                __DATE__
+#define BUILD_TIME                __TIME__
 
 #define MAX_LINE_SZ                 80
 #define OUTBFR_SIZE                 (MAX_LINE_SZ * 3)
