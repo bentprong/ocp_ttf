@@ -8,23 +8,26 @@ uint32_t                sampleRate = 4096;
   //tcDisable(); //This function can be used anywhere if you need to stop/pause the timer
   //tcReset(); //This function should be called everytime you stop the timer
 
-volatile uint32_t       scanClockPulseCounter = 0;
+volatile uint32_t       scanClockPulseCounter;
 volatile bool           enableScanClk = false;
-volatile uint32_t       scanShiftRegister_0 = 0;
-uint8_t                 shift = 31;
+volatile uint32_t       scanShiftRegister_0;
+uint8_t                 shift;
 
 // this must align with staticPins active state inactive value
 static uint8_t          scanClockState = 1;
 
 void timers_scanChainCapture(void)
 {
+    scanClockPulseCounter = 0;
+    scanShiftRegister_0 = 0;
+    shift = 31;
+
     digitalWrite(OCP_SCAN_CLK, scanClockState);
 
     digitalWrite(OCP_SCAN_LD_N, 0);
     delayMicroseconds(200);
     digitalWrite(OCP_SCAN_LD_N, 1);
 
-    scanClockPulseCounter = 0;
     enableScanClk = true;
 
     while ( scanClockPulseCounter < 32 )

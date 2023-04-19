@@ -583,6 +583,7 @@ int pwrCmd(int argCnt)
                 writePin(OCP_MAIN_PWR_EN, 1);
                 delay(EEPROMData.pwr_seq_delay_msec);
                 writePin(OCP_AUX_PWR_EN, 1);
+                delay(3000);
                 queryScanChain(false);
                 queryScanChain(true);
                 terminalOut((char *) "Power up sequence complete");
