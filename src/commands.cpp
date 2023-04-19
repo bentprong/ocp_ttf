@@ -12,8 +12,11 @@
 #include "commands.hpp"
 #include <math.h>
 
-extern char             *tokens[];
-extern EEPROM_data_t    EEPROMData;
+extern char                 *tokens[];
+extern EEPROM_data_t        EEPROMData;
+extern volatile uint32_t    scanClockPulseCounter;
+extern volatile bool        enableScanClk;
+extern volatile uint32_t    scanShiftRegister_0;
 
 // pin defs used for 1) pin init and 2) copied into volatile status structure
 // to maintain state of inputs pins that get written 3) pin names (nice, right?) ;-)
@@ -29,8 +32,8 @@ extern EEPROM_data_t    EEPROMData;
   {           OCP_SCAN_LD_N, OUTPUT,    ACT_LO, "SCAN_LD_N"},
   {         OCP_MAIN_PWR_EN, OUTPUT,    ACT_HI, "MAIN_EN"},
   {          OCP_AUX_PWR_EN, OUTPUT,    ACT_HI, "AUX_EN"},
-  {        OCP_SCAN_DATA_IN, OUTPUT,    ACT_HI, "SCAN_DATA_IN"},  // "in" to NIC 3.0 card
-  {       OCP_SCAN_DATA_OUT, INPUT,     ACT_HI, "SCAN_DATA_OUT"}, // "out" from NIC 3.0 card
+  {        OCP_SCAN_DATA_IN, INPUT,     ACT_HI, "SCAN_DATA_IN"},  // "in" from NIC 3.0 card (baseboard perspective)
+  {       OCP_SCAN_DATA_OUT, OUTPUT,    ACT_HI, "SCAN_DATA_OUT"}, // "out" to NIC 3.0 card
   {              P1_LINKA_N, INPUT,     ACT_LO, "P1_LINKA_N"},
   {            P1_LED_ACT_N, INPUT,     ACT_LO, "P1_LED_ACT_N"},
   {              LINK_ACT_2, INPUT,     ACT_LO, "LINK_ACT_2"},
@@ -45,6 +48,7 @@ extern EEPROM_data_t    EEPROMData;
   {              OCP_WAKE_N, INPUT,     ACT_LO, "WAKE_N"},
   {            OCP_PWRBRK_N, INPUT,     ACT_LO, "PWRBRK_N"},
   {              NCSI_RST_N, OUTPUT,    ACT_LO, "NCSI_RST_N"},
+  {            OCP_SCAN_CLK, OUTPUT,    ACT_LO, "SCAN_CLK"},
 };
 
 uint16_t      static_pin_count = sizeof(staticPins) / sizeof(pin_mgt_t);
@@ -52,6 +56,8 @@ uint16_t      static_pin_count = sizeof(staticPins) / sizeof(pin_mgt_t);
 static char             outBfr[OUTBFR_SIZE];
 uint8_t                 pinStates[PINS_COUNT] = {0};
 
+// Prototypes
+void timers_scanChainCapture(void);
 void writePin(uint8_t pinNo, uint8_t value);
 void readAllPins(void);
 
@@ -577,7 +583,8 @@ int pwrCmd(int argCnt)
                 writePin(OCP_MAIN_PWR_EN, 1);
                 delay(EEPROMData.pwr_seq_delay_msec);
                 writePin(OCP_AUX_PWR_EN, 1);
-                queryScanChain();
+                queryScanChain(false);
+                queryScanChain(true);
                 terminalOut((char *) "Power up sequence complete");
             }
             else
@@ -692,14 +699,90 @@ int versCmd(int arg)
     return(0);
 }
 
+typedef struct {
+    uint8_t     bitNo;
+    char        bitName[20];
+} scan_data_t;
+
+scan_data_t     scanBitNames[] = {
+    // Byte 0
+    {7, "0.7 FAN_ON_AUX"},
+    {6, "0.6 TEMP_CRIT_N"},
+    {5, "0.5 TEMP_WARN_N"},
+    {4, "0.4 WAKE_N"},
+    {3, "0.3 PRSNTB[3]_P#"},
+    {2, "0.2 PRSNTB[2]_P#"},
+    {1, "0.1 PRSNTB[1]_P#"},
+    {0, "0.0 PRSNTB[0]_P#"},
+
+    // Byte 1
+    {15, "1.7 LINK_SPDB_P2#"},
+    {14, "1.6 LINK_SPDA_P2#"},
+    {13, "1.5 ACT_P1#"},
+    {12, "1.4 LINK_SPDB_P1#"},
+    {11, "1.3 LINK_SPDA_P1#"},
+    {10, "1.2 ACT_PO#"},
+    {9, "1.1 LINK_SPDB_PO#"},
+    {8, "1.0 LINK_SPDA_PO#"},
+
+    // Byte 2
+    {23, "2.7 LINK_SPDA_P5#"},
+    {22, "2.6 ACT_P4#"},
+    {21, "2.5 LINK_SPDB_P4#"},
+    {20, "2.4 LINK_SPDA_P4#"},
+    {19, "2.3 ACT_P3#"},
+    {18, "2.2 LINK_SPDB_P3#"},
+    {17, "2.1 LINK_SPDA_P3#"},
+    {16, "2.0 ACT_P2#"},
+
+    // Byte 3
+    {31, "3.7 ACT_P7#"},
+    {30, "3.6 LINK_SPDB_P7#"},
+    {29, "3.5 LINK_SPDA_P7#"},
+    {28, "3.4 ACT_P6#"},
+    {27, "3.3 LINK_SPDB_P6#"},
+    {26, "3.2 LINK_SPDA_P6#"},
+    {25, "3.1 ACT_P5#"},
+    {24, "3.0 LINK_SPDB_P5#"},
+};
+
 /**
   * @name   queryScanChain
   * @brief  extract info from scan chain output
   * @param  None
   * @retval None
   */
-void queryScanChain(void)
+void queryScanChain(bool displayResults)
 {
-    // TODO implementation
-    terminalOut((char *) "Scan chain info not available");
+    uint8_t             shift = 0;
+    char                *s = outBfr;
+    const char          fmt[] = "%-20s ... %d    ";
+    unsigned            i = 0;
+
+    timers_scanChainCapture();
+
+    if ( displayResults == false )
+        return;
+
+    sprintf(outBfr, "scan chain shift register 0: %08X", (unsigned int) scanShiftRegister_0);
+    terminalOut(outBfr);
+
+    // WARNING: This code below expects the entries in scanBitNames to be in order order 0..31
+    while ( i < 32 )
+    {
+        sprintf(s, fmt, scanBitNames[i++].bitName, (scanShiftRegister_0 & (1 << shift++)) ? 1 : 0);
+        s += 30;
+        sprintf(s, fmt, scanBitNames[i++].bitName, (scanShiftRegister_0 & (1 << shift++)) ? 1 : 0);
+        s += 30;
+        *s = 0;
+
+        terminalOut(outBfr);
+        s = outBfr;
+    }
+}
+
+int scanCmd(int argCnt)
+{
+    queryScanChain(true);
+    return(0);
 }

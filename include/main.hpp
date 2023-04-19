@@ -20,6 +20,7 @@
 #define OCP_SCAN_LD_N         0   // PA22
 #define OCP_MAIN_PWR_EN       1   // PA23
 #define OCP_SCAN_DATA_IN      2   // PA10
+#define OCP_SCAN_CLK          3   // PA11
 
 #define OCP_PRSNTB1_N         4   // PB10
 #define P1_LINKA_N            5   // PB11

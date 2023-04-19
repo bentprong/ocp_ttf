@@ -15,6 +15,6 @@ void configureIOPins(void);
 void readAllPins(void);
 bool readPin(uint8_t pinNo);
 void writePin(uint8_t pinNo, uint8_t value);
-void queryScanChain(void);
+void queryScanChain(bool);
 
 #endif // _COMMANDS_H_

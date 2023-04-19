@@ -14,6 +14,9 @@
 #include <Wire.h>
 #include "main.hpp"
 
+// timers
+void timers_Init(void);
+
 // heartbeat LED blink delays in ms (approx)
 #define FAST_BLINK_DELAY            200
 #define SLOW_BLINK_DELAY            1000
@@ -67,6 +70,7 @@ void setup()
       delay(FAST_BLINK_DELAY);
   }
 
+  timers_Init();
   doHello();
   doPrompt();
 
