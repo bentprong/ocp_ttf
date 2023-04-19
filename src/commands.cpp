@@ -705,7 +705,9 @@ typedef struct {
     char        bitName[20];
 } scan_data_t;
 
-scan_data_t     scanBitNames[] = {
+// NOTE: This table is processed aligning with bits 31..0
+// The bitNo entry is NOT used
+const scan_data_t     scanBitNames[] = {
     // Byte 0
     {7, "0.7 FAN_ON_AUX"},
     {6, "0.6 TEMP_CRIT_N"},
@@ -752,10 +754,11 @@ scan_data_t     scanBitNames[] = {
   * @brief  extract info from scan chain output
   * @param  None
   * @retval None
+  * @note   NIC card must be powered up!
   */
 void queryScanChain(bool displayResults)
 {
-    uint8_t             shift = 0;
+    uint8_t             shift = 31;
     char                *s = outBfr;
     const char          fmt[] = "%-20s ... %d    ";
     unsigned            i = 0;
@@ -768,12 +771,13 @@ void queryScanChain(bool displayResults)
     sprintf(outBfr, "scan chain shift register 0: %08X", (unsigned int) scanShiftRegister_0);
     terminalOut(outBfr);
 
-    // WARNING: This code below expects the entries in scanBitNames to be in order order 0..31
+    // WARNING: This code below expects the entries in scanBitNames[] to be in order order 31..0
+    // to align with incoming shifted left bits from SCAN_DATA_IN
     while ( i < 32 )
     {
-        sprintf(s, fmt, scanBitNames[i++].bitName, (scanShiftRegister_0 & (1 << shift++)) ? 1 : 0);
+        sprintf(s, fmt, scanBitNames[i++].bitName, (scanShiftRegister_0 & (1 << shift--)) ? 1 : 0);
         s += 30;
-        sprintf(s, fmt, scanBitNames[i++].bitName, (scanShiftRegister_0 & (1 << shift++)) ? 1 : 0);
+        sprintf(s, fmt, scanBitNames[i++].bitName, (scanShiftRegister_0 & (1 << shift--)) ? 1 : 0);
         s += 30;
         *s = 0;
 
@@ -784,6 +788,14 @@ void queryScanChain(bool displayResults)
 
 int scanCmd(int argCnt)
 {
-    queryScanChain(true);
+    if ( readPin(OCP_MAIN_PWR_EN) == 1 && readPin(OCP_AUX_PWR_EN) == 1 )
+    {
+        queryScanChain(true);
+    }
+    else
+    {
+        terminalOut((char *) "NIC card is not powered up; cannot query scan chain");
+    }
+
     return(0);
 }

@@ -3,10 +3,7 @@
 
 extern volatile uint32_t  scanShiftRegister_0;
 
-uint32_t                sampleRate = 4096; 
-
-  //tcDisable(); //This function can be used anywhere if you need to stop/pause the timer
-  //tcReset(); //This function should be called everytime you stop the timer
+uint32_t                sampleRate = 4096;              // Mhz = this % 2
 
 volatile uint32_t       scanClockPulseCounter;
 volatile bool           enableScanClk = false;
@@ -16,18 +13,28 @@ uint8_t                 shift;
 // this must align with staticPins active state inactive value
 static uint8_t          scanClockState = 1;
 
+/**
+  * @name   timers_scanChainCapture
+  * @brief  capture scan chain data & control CLK
+  * @param  None
+  * @retval None
+  */
 void timers_scanChainCapture(void)
 {
+    // initialize vars used by timer handler
     scanClockPulseCounter = 0;
     scanShiftRegister_0 = 0;
     shift = 31;
 
+    // SCAN_CLK high
     digitalWrite(OCP_SCAN_CLK, scanClockState);
 
+    // SCAN_LD_N low briefly
     digitalWrite(OCP_SCAN_LD_N, 0);
     delayMicroseconds(200);
     digitalWrite(OCP_SCAN_LD_N, 1);
 
+    // start capture (when CLK falls)
     enableScanClk = true;
 
     while ( scanClockPulseCounter < 32 )
@@ -39,13 +46,19 @@ void timers_scanChainCapture(void)
     enableScanClk = false;
 }
 
+/**
+  * @name   TC5_Handler
+  * @brief  TC ISR
+  * @param  None
+  * @retval None
+  */
 void TC5_Handler(void) 
 {
     if ( enableScanClk )
     {      
         if ( scanClockState == 1 )
         {
-            // latch bit on falling edge of clock + 1usec Figure 97
+            // latch bit on falling edge of clock + 10 usec Figure 97
             scanClockState = 0;
             digitalWrite(OCP_SCAN_CLK, scanClockState);
             delayMicroseconds(10);
@@ -62,30 +75,60 @@ void TC5_Handler(void)
     TC5->COUNT16.INTFLAG.bit.MC0 = 1; 
 }
 
-bool tcIsSyncing()
+/**
+  * @name   tcIsSyncing
+  * @brief  returning SYNCBUSY flag
+  * @param  None
+  * @retval None
+  */
+bool tcIsSyncing(void)
 {
     return TC5->COUNT16.STATUS.reg & TC_STATUS_SYNCBUSY;
 }
 
-void tcStartCounter()
+/**
+  * @name   tcStartCounter
+  * @brief  start timer counter
+  * @param  None
+  * @retval None
+  */
+void tcStartCounter(void)
 {
     TC5->COUNT16.CTRLA.reg |= TC_CTRLA_ENABLE;
     while (tcIsSyncing());
 }
 
-void tcReset()
+/**
+  * @name   tcReset
+  * @brief  reset timer
+  * @param  None
+  * @retval None
+  */
+void tcReset(void)
 {
     TC5->COUNT16.CTRLA.reg = TC_CTRLA_SWRST;
     while (tcIsSyncing());
     while (TC5->COUNT16.CTRLA.bit.SWRST);
 }
 
-void tcDisable()
+/**
+  * @name   tcDisable
+  * @brief  disable timer
+  * @param  None
+  * @retval None
+  */
+void tcDisable(void)
 {
     TC5->COUNT16.CTRLA.reg &= ~TC_CTRLA_ENABLE;
     while (tcIsSyncing());
 }
 
+/**
+  * @name   tcConfigure
+  * @brief  configure timer TC5
+  * @param  None
+  * @retval None
+  */
 void tcConfigure(int sampleRate)
 {
     // select the generic clock generator used as source to the generic clock multiplexer
@@ -103,7 +146,7 @@ void tcConfigure(int sampleRate)
     //set prescaler
     //the clock normally counts at the GCLK_TC frequency, but we can set it to divide that frequency to slow it down
     //you can use different prescaler divisons here like TC_CTRLA_PRESCALER_DIV1 to get a different range
-    TC5->COUNT16.CTRLA.reg |= TC_CTRLA_PRESCALER_DIV1 | TC_CTRLA_ENABLE; //it will divide GCLK_TC frequency by 1024
+    TC5->COUNT16.CTRLA.reg |= TC_CTRLA_PRESCALER_DIV1 | TC_CTRLA_ENABLE; //it will divide GCLK_TC frequency by 1
 
     //set the compare-capture register. 
     //The counter will count up to this value (it's a 16bit counter so we use uint16_t)
@@ -123,7 +166,13 @@ void tcConfigure(int sampleRate)
     while (tcIsSyncing()); //wait until TC5 is done syncing 
 } 
 
-void timers_Init() 
+/**
+  * @name   timers_Init
+  * @brief  initialize timers used by firmware
+  * @param  None
+  * @retval None
+  */
+void timers_Init(void) 
 {
     tcConfigure(sampleRate);
     tcStartCounter();
