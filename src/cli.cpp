@@ -38,6 +38,7 @@ int statusCmd(int arg);
 int eepromCmd(int arg);
 int pwrCmd(int arg);
 int versCmd(int arg);
+int scanCmd(int arg);
 
 // CLI command table
 // CLI_COMMAND_CNT is defined in cli.hpp
@@ -48,9 +49,10 @@ int versCmd(int arg);
 cli_entry     cmdTable[CLI_COMMAND_CNT] = {
     {"eeprom", eepromCmd,  -1, "'eeprom show' displays FRU EEPROM info areas.",  "'eeprom dump <addr> <length>' dumps <length> bytes @ <addr>"},
     {"pins",      pinCmd,   0, "Displays pin names and numbers.",                "TTF uses Arduino-style pin numbering shown in this display."},
-    {"power",     pwrCmd,  -1, "Control power to NIC 3.0 board.",                "'power <up|down> <main|aux|card>' or 'power status' "},
+    {"power",     pwrCmd,  -1, "Control power to NIC 3.0 card.",                 "'power <up|down> <main|aux|card>' or 'power status' "},
     {"read",     readCmd,   1, "Read input pin (Arduino numbering).",            "'read <pin_number>'"},
     {"set",       setCmd,  -1, "Set FLASH parameter to a value.",                "'set <param> <value>' sets value; or 'set' with no args for help."},
+    {"scan",     scanCmd,   0, "Scan chain query of NIC 3.0 card.",              " "},
     {"status", statusCmd,   0, "Displays status of I/O pins etc.",               " "},
     {"vers",     versCmd,   0, "Shows firmware version information.",            " "},
     {"write",   writeCmd,   2, "Write output pin (Arduino numbering).",          "'write <pin_number> <0|1>'"},

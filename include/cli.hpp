@@ -5,7 +5,7 @@
 #include "main.hpp"
 
 // update CLI_COMMAND_CNT if adding new commands to table in cli.cpp
-#define CLI_COMMAND_CNT           10
+#define CLI_COMMAND_CNT           11
 
 #define CMD_NAME_MAX              12
 
