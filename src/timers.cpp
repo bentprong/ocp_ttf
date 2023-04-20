@@ -1,8 +1,6 @@
 #include <Arduino.h>
 #include "main.hpp"
 
-extern volatile uint32_t  scanShiftRegister_0;
-
 uint32_t                sampleRate = 4096;              // Mhz = this % 2
 
 volatile uint32_t       scanClockPulseCounter;
