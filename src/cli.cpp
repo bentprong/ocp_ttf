@@ -63,8 +63,8 @@ cli_entry     cmdTable[CLI_COMMAND_CNT] = {
 /**
   * @name   CURSOR
   * @brief  set terminal cursor
-  * @param  r = row
-  * @param  c = column
+  * @param  r row
+  * @param  c column
   * @retval None
   * @note   no error checking for out of bounds params
   */

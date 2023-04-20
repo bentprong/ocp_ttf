@@ -53,6 +53,55 @@ extern volatile uint32_t    scanShiftRegister_0;
 
 uint16_t      static_pin_count = sizeof(staticPins) / sizeof(pin_mgt_t);
 
+typedef struct {
+    uint8_t     bitNo;
+    char        bitName[20];
+} scan_data_t;
+
+// NOTE: This table is processed aligning with bits 31..0
+// The bitNo entry is NOT used
+const scan_data_t     scanBitNames[] = {
+    // Byte 0
+    {7, "0.7 FAN_ON_AUX"},
+    {6, "0.6 TEMP_CRIT_N"},
+    {5, "0.5 TEMP_WARN_N"},
+    {4, "0.4 WAKE_N"},
+    {3, "0.3 PRSNTB[3]_P#"},
+    {2, "0.2 PRSNTB[2]_P#"},
+    {1, "0.1 PRSNTB[1]_P#"},
+    {0, "0.0 PRSNTB[0]_P#"},
+
+    // Byte 1
+    {15, "1.7 LINK_SPDB_P2#"},
+    {14, "1.6 LINK_SPDA_P2#"},
+    {13, "1.5 ACT_P1#"},
+    {12, "1.4 LINK_SPDB_P1#"},
+    {11, "1.3 LINK_SPDA_P1#"},
+    {10, "1.2 ACT_PO#"},
+    {9, "1.1 LINK_SPDB_PO#"},
+    {8, "1.0 LINK_SPDA_PO#"},
+
+    // Byte 2
+    {23, "2.7 LINK_SPDA_P5#"},
+    {22, "2.6 ACT_P4#"},
+    {21, "2.5 LINK_SPDB_P4#"},
+    {20, "2.4 LINK_SPDA_P4#"},
+    {19, "2.3 ACT_P3#"},
+    {18, "2.2 LINK_SPDB_P3#"},
+    {17, "2.1 LINK_SPDA_P3#"},
+    {16, "2.0 ACT_P2#"},
+
+    // Byte 3
+    {31, "3.7 ACT_P7#"},
+    {30, "3.6 LINK_SPDB_P7#"},
+    {29, "3.5 LINK_SPDA_P7#"},
+    {28, "3.4 ACT_P6#"},
+    {27, "3.3 LINK_SPDB_P6#"},
+    {26, "3.2 LINK_SPDA_P6#"},
+    {25, "3.1 ACT_P5#"},
+    {24, "3.0 LINK_SPDB_P5#"},
+};
+
 static char             outBfr[OUTBFR_SIZE];
 uint8_t                 pinStates[PINS_COUNT] = {0};
 
@@ -135,6 +184,12 @@ int readCmd(int arg)
     uint8_t       pinNo = atoi(tokens[1]);
     uint8_t       index = getPinIndex(pinNo);
 
+    if ( isCardPresent() == false )
+    {
+        terminalOut((char *) "NIC card is not present; cannot read an I/O pin");
+        return(1);
+    }
+
     if ( pinNo > PINS_COUNT )
     {
         terminalOut((char *) "Invalid pin number; please use Arduino numbering");
@@ -160,6 +215,12 @@ int writeCmd(int argCnt)
     uint8_t     pinNo = atoi(tokens[1]);
     uint8_t     value = atoi(tokens[2]);
     uint8_t     index = getPinIndex(pinNo);
+
+    if ( isCardPresent() == false )
+    {
+        terminalOut((char *) "NIC card is not present; cannot write an I/O pin");
+        return(1);
+    }
 
     if ( pinNo > PINS_COUNT || index == -1 )
     {
@@ -212,6 +273,12 @@ int pinCmd(int arg)
 {
     int         count = static_pin_count;
     int         index = 0;
+
+    if ( isCardPresent() == false )
+    {
+        terminalOut((char *) "NIC card is not present; cannot display I/O pins");
+        return(1);
+    }
 
     terminalOut((char *) " ");
     terminalOut((char *) " #           Pin Name   D/S              #        Pin Name      D/S ");
@@ -292,6 +359,12 @@ int statusCmd(int arg)
     uint16_t        count = EEPROMData.status_delay_secs;
     bool            oneShot = (count == 0) ? true : false;
 
+    if ( isCardPresent() == false )
+    {
+        terminalOut((char *) "NIC card is not present; cannot display status");
+        return(1);
+    }
+
     while ( 1 )
     {
         readAllPins();
@@ -313,8 +386,8 @@ int statusCmd(int arg)
         displayLine(outBfr);
 
         CURSOR(4,56);
-        sprintf(outBfr, "PRSNTB [3:0]   %u%u%u%u", readPin(OCP_PRSNTB3_N), readPin(OCP_PRSNTB2_N), 
-                readPin(OCP_PRSNTB1_N), readPin(OCP_PRSNTB0_N));
+        sprintf(outBfr, "PRSNTB [3:0]   %u%u%u%u %s", readPin(OCP_PRSNTB3_N), readPin(OCP_PRSNTB2_N), 
+                readPin(OCP_PRSNTB1_N), readPin(OCP_PRSNTB0_N), isCardPresent() ? "CARD" : "VOID");
         displayLine(outBfr);
 
         CURSOR(5,1);
@@ -515,6 +588,51 @@ int setCmd(int argCnt)
 
 } // setCmd()
 
+/**
+  * @name   queryScanChain
+  * @brief  extract info from scan chain output
+  * @param  displayResults  true to display results, else false
+  * @retval uint32_t    32 bits of scan chain data received
+  */
+uint32_t queryScanChain(bool displayResults)
+{
+    uint8_t             shift = 31;
+    char                *s = outBfr;
+    const char          fmt[] = "%-20s ... %d    ";
+    unsigned            i = 0;
+
+    timers_scanChainCapture();
+
+    if ( displayResults == false )
+        return(scanShiftRegister_0);
+
+    sprintf(outBfr, "scan chain shift register 0: %08X", (unsigned int) scanShiftRegister_0);
+    terminalOut(outBfr);
+
+    // WARNING: This code below expects the entries in scanBitNames[] to be in order order 31..0
+    // to align with incoming shifted left bits from SCAN_DATA_IN
+    while ( i < 32 )
+    {
+        sprintf(s, fmt, scanBitNames[i++].bitName, (scanShiftRegister_0 & (1 << shift--)) ? 1 : 0);
+        s += 30;
+        sprintf(s, fmt, scanBitNames[i++].bitName, (scanShiftRegister_0 & (1 << shift--)) ? 1 : 0);
+        s += 30;
+        *s = 0;
+
+        terminalOut(outBfr);
+        s = outBfr;
+    }
+
+    return(scanShiftRegister_0);
+    
+} // queryScanChain()
+
+/**
+  * @name   pwrCmdHelp
+  * @brief  display help for the power command
+  * @param  None
+  * @retval None
+  */
 static void pwrCmdHelp(void)
 {
     terminalOut((char *) "Usage: power <up | down | status> <main | aux | card>");
@@ -544,6 +662,12 @@ int pwrCmd(int argCnt)
     if ( argCnt == 0 )
     {
         pwrCmdHelp();
+        return(1);
+    }
+
+    if ( isCardPresent() == false )
+    {
+        terminalOut((char *) "NIC card is not present; no power info available");
         return(1);
     }
 
@@ -583,7 +707,8 @@ int pwrCmd(int argCnt)
                 writePin(OCP_MAIN_PWR_EN, 1);
                 delay(EEPROMData.pwr_seq_delay_msec);
                 writePin(OCP_AUX_PWR_EN, 1);
-                delay(3000);
+                terminalOut((char *) "Waiting for scan chain data...");
+                delay(2000);
                 queryScanChain(false);
                 queryScanChain(true);
                 terminalOut((char *) "Power up sequence complete");
@@ -700,101 +825,42 @@ int versCmd(int arg)
     return(0);
 }
 
-typedef struct {
-    uint8_t     bitNo;
-    char        bitName[20];
-} scan_data_t;
-
-// NOTE: This table is processed aligning with bits 31..0
-// The bitNo entry is NOT used
-const scan_data_t     scanBitNames[] = {
-    // Byte 0
-    {7, "0.7 FAN_ON_AUX"},
-    {6, "0.6 TEMP_CRIT_N"},
-    {5, "0.5 TEMP_WARN_N"},
-    {4, "0.4 WAKE_N"},
-    {3, "0.3 PRSNTB[3]_P#"},
-    {2, "0.2 PRSNTB[2]_P#"},
-    {1, "0.1 PRSNTB[1]_P#"},
-    {0, "0.0 PRSNTB[0]_P#"},
-
-    // Byte 1
-    {15, "1.7 LINK_SPDB_P2#"},
-    {14, "1.6 LINK_SPDA_P2#"},
-    {13, "1.5 ACT_P1#"},
-    {12, "1.4 LINK_SPDB_P1#"},
-    {11, "1.3 LINK_SPDA_P1#"},
-    {10, "1.2 ACT_PO#"},
-    {9, "1.1 LINK_SPDB_PO#"},
-    {8, "1.0 LINK_SPDA_PO#"},
-
-    // Byte 2
-    {23, "2.7 LINK_SPDA_P5#"},
-    {22, "2.6 ACT_P4#"},
-    {21, "2.5 LINK_SPDB_P4#"},
-    {20, "2.4 LINK_SPDA_P4#"},
-    {19, "2.3 ACT_P3#"},
-    {18, "2.2 LINK_SPDB_P3#"},
-    {17, "2.1 LINK_SPDA_P3#"},
-    {16, "2.0 ACT_P2#"},
-
-    // Byte 3
-    {31, "3.7 ACT_P7#"},
-    {30, "3.6 LINK_SPDB_P7#"},
-    {29, "3.5 LINK_SPDA_P7#"},
-    {28, "3.4 ACT_P6#"},
-    {27, "3.3 LINK_SPDB_P6#"},
-    {26, "3.2 LINK_SPDA_P6#"},
-    {25, "3.1 ACT_P5#"},
-    {24, "3.0 LINK_SPDB_P5#"},
-};
-
 /**
-  * @name   queryScanChain
-  * @brief  extract info from scan chain output
+  * @name   isCardPresent
+  * @brief  Determine if NIC card is present
   * @param  None
-  * @retval None
-  * @note   NIC card must be powered up!
+  * @retval true if card present, else false
   */
-void queryScanChain(bool displayResults)
+bool isCardPresent(void)
 {
-    uint8_t             shift = 31;
-    char                *s = outBfr;
-    const char          fmt[] = "%-20s ... %d    ";
-    unsigned            i = 0;
+    uint8_t         present = readPin(OCP_PRSNTB0_N);
 
-    timers_scanChainCapture();
+    present |= (readPin(OCP_PRSNTB1_N) << 1);
+    present |= (readPin(OCP_PRSNTB2_N) << 2);
+    present |= (readPin(OCP_PRSNTB3_N) << 3);
 
-    if ( displayResults == false )
-        return;
-
-    sprintf(outBfr, "scan chain shift register 0: %08X", (unsigned int) scanShiftRegister_0);
-    terminalOut(outBfr);
-
-    // WARNING: This code below expects the entries in scanBitNames[] to be in order order 31..0
-    // to align with incoming shifted left bits from SCAN_DATA_IN
-    while ( i < 32 )
-    {
-        sprintf(s, fmt, scanBitNames[i++].bitName, (scanShiftRegister_0 & (1 << shift--)) ? 1 : 0);
-        s += 30;
-        sprintf(s, fmt, scanBitNames[i++].bitName, (scanShiftRegister_0 & (1 << shift--)) ? 1 : 0);
-        s += 30;
-        *s = 0;
-
-        terminalOut(outBfr);
-        s = outBfr;
-    }
+    if ( present == 0xF )
+        return(false);
+    
+    return(true);
 }
 
+
+/**
+  * @name   scanCmd
+  * @brief  implement scan command
+  * @param  argCnt  not used
+  * @retval int 0=OK, 1=error
+  */
 int scanCmd(int argCnt)
 {
-    if ( readPin(OCP_MAIN_PWR_EN) == 1 && readPin(OCP_AUX_PWR_EN) == 1 )
+    if ( isCardPresent() )
     {
         queryScanChain(true);
     }
     else
     {
-        terminalOut((char *) "NIC card is not powered up; cannot query scan chain");
+        terminalOut((char *) "NIC card is not present; cannot query scan chain");
     }
 
     return(0);

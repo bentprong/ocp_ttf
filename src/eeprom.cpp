@@ -9,6 +9,7 @@
 #include <time.h>
 #include "eeprom.hpp"
 #include "cli.hpp"
+#include "commands.hpp"
 
 // uncomment line below to enable hex dumps of EEPROM regions
 //#define EEPROM_DEBUG 1
@@ -219,6 +220,12 @@ int eepromCmd(int arg)
     uint8_t           slot;
     uint32_t          deltaTime;
     time_t            t;
+
+    if ( isCardPresent() == false )
+    {
+        terminalOut((char *) "NIC card is not present; cannot query FRU EEPROM");
+        return(1);
+    }
 
     // read the slot ID, which determines the FRU EEPROM I2C address
     // NOTE: Slot ID pins are tied to ground on TTF so zero here
