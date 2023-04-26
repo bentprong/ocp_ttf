@@ -36,7 +36,7 @@ extern volatile uint32_t    scanShiftRegister_0;
   {       OCP_SCAN_DATA_OUT, OUTPUT,    ACT_HI, "SCAN_DATA_OUT"}, // "out" to NIC 3.0 card
   {              P1_LINKA_N, INPUT,     ACT_LO, "P1_LINKA_N"},
   {            P1_LED_ACT_N, INPUT,     ACT_LO, "P1_LED_ACT_N"},
-  {              LINK_ACT_2, INPUT,     ACT_LO, "LINK_ACT_2"},
+  {              ATX_PWR_OK, INPUT,     ACT_LO, "ATX_PWR_OK"},
   {              P3_LINKA_N, INPUT,     ACT_LO, "P3_LINKA_N"},
   {            P3_LED_ACT_N, INPUT,     ACT_LO, "P3_LED_ACT_N"},
   {           OCP_PRSNTB0_N, INPUT,     ACT_LO, "PRSNTB0_N"},
@@ -49,6 +49,8 @@ extern volatile uint32_t    scanShiftRegister_0;
   {            OCP_PWRBRK_N, INPUT,     ACT_LO, "PWRBRK_N"},
   {              NCSI_RST_N, OUTPUT,    ACT_LO, "NCSI_RST_N"},
   {            OCP_SCAN_CLK, OUTPUT,    ACT_LO, "SCAN_CLK"},
+  {       OCP_HEARTBEAT_LED, OUTPUT,    ACT_LO, "HEARTBEAT"},         // HACK: temporary LED between UART pins 1 & 3
+  {        OCP_PWR_GOOD_JMP, INPUT,     ACT_HI, "OCP_PWR_GOOD"},      // HACK: PWR_GOOD_LED to UART connector pin 2
 };
 
 uint16_t      static_pin_count = sizeof(staticPins) / sizeof(pin_mgt_t);
@@ -395,7 +397,7 @@ int statusCmd(int arg)
         displayLine(outBfr);
 
         CURSOR(5,58);
-        sprintf(outBfr, "LINK_ACT_2      %u", readPin(LINK_ACT_2));
+        sprintf(outBfr, "ATX_PWR_OK      %u", readPin(ATX_PWR_OK));
         displayLine(outBfr);
 
         CURSOR(6,1);
@@ -658,6 +660,7 @@ int pwrCmd(int argCnt)
     bool            isPowered = false;
     uint8_t         mainPin = readPin(OCP_MAIN_PWR_EN);
     uint8_t         auxPin = readPin(OCP_AUX_PWR_EN);
+    uint8_t         pwrGoodPin = readPin(OCP_PWR_GOOD_JMP);
 
     if ( argCnt == 0 )
     {
@@ -671,7 +674,7 @@ int pwrCmd(int argCnt)
         return(1);
     }
 
-    if (  mainPin == 1 &&  auxPin == 1 )
+    if (  mainPin == 1 &&  auxPin == 1 && pwrGoodPin )
         isPowered = true;
 
     if ( argCnt == 1 )
@@ -707,11 +710,22 @@ int pwrCmd(int argCnt)
                 writePin(OCP_MAIN_PWR_EN, 1);
                 delay(EEPROMData.pwr_seq_delay_msec);
                 writePin(OCP_AUX_PWR_EN, 1);
+
+                // NIC card takes a bit of time to power up
+                delay(50);
+                if ( readPin(OCP_PWR_GOOD_JMP) )
+                    terminalOut((char *) "Power up sequence complete");
+                else
+                {
+                    terminalOut((char *) "Power up sequence failed; NIC_PWR_GOOD = 0");
+                    return(1);
+                }
+
                 terminalOut((char *) "Waiting for scan chain data...");
                 delay(2000);
                 queryScanChain(false);
                 queryScanChain(true);
-                terminalOut((char *) "Power up sequence complete");
+
             }
             else
             {
@@ -761,7 +775,11 @@ int pwrCmd(int argCnt)
             {
                 writePin(OCP_MAIN_PWR_EN, 0);
                 writePin(OCP_AUX_PWR_EN, 0);
-                terminalOut((char *) "Powered down NIC card");
+                delay(100);
+                if ( readPin(OCP_PWR_GOOD_JMP) == 0 )
+                    terminalOut((char *) "Power down sequence complete");
+                else
+                    terminalOut((char *) "Power down failed; NIC_PWR_GOOD = 1");
             }
             else
             {

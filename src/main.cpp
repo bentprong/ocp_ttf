@@ -29,16 +29,16 @@ void timers_Init(void);
   */
 void setup() 
 {
-  bool        LEDstate = false;
+  bool              LEDstate = false;
+
+  // turn on heartbeat LED, which indicates that the
+  // board is being initialized (not much initialization to do!)
+  // NOTE: LED is active low. and is configured with other pins
+  // TODO fixme when real LED is available
+  digitalWrite(OCP_HEARTBEAT_LED, LEDstate);
 
   Wire.begin();
   //  Wire.setClock(400000);
-
-  // configure heartbeat LED pin and turn on which indicates that the
-  // board is being initialized (not much initialization to do!)
-  // NOTE: LED is active low.
-  //pinMode(PIN_LED, OUTPUT);
-  //digitalWrite(PIN_LED, LEDstate);
 
   // configure I/O pins and read all inputs
   // NOTE: Output pins will be 0 initially
@@ -66,7 +66,7 @@ void setup()
   {
       // fast blink while waiting for a connection
       LEDstate = LEDstate ? 0 : 1;
-      digitalWrite(PIN_LED, LEDstate);
+      digitalWrite(OCP_HEARTBEAT_LED, LEDstate);
       delay(FAST_BLINK_DELAY);
   }
 
@@ -105,11 +105,12 @@ void loop()
   static uint32_t time = millis();
 
   // blink heartbeat LED
+  // TODO fixme - real LED not the one on UART connector
   if ( millis() - time >= SLOW_BLINK_DELAY )
   {
       time = millis();
       LEDstate = LEDstate ? 0 : 1;
-      digitalWrite(PIN_LED, LEDstate);
+      digitalWrite(OCP_HEARTBEAT_LED, LEDstate);
   }
 
   // process incoming serial over USB characters

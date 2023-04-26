@@ -7,10 +7,9 @@
 #include <Arduino.h>
 #include "cli.hpp"
 
-#define VERSION_ID               "1.0.8"
+#define VERSION_ID               "1.0.9"
 #define BUILD_DATE                __DATE__
 #define BUILD_TIME                __TIME__
-
 #define MAX_LINE_SZ                 80
 #define OUTBFR_SIZE                 (MAX_LINE_SZ * 3)
 
@@ -24,10 +23,12 @@
 
 #define OCP_PRSNTB1_N         4   // PB10
 #define P1_LINKA_N            5   // PB11
+#define OCP_PWR_GOOD_JMP      6   // PA20 HACK: PWR_GOOD_LED to UART connector pin 2
 #define SCAN_VER_0            7   // PA21
 
 #define OCP_SCAN_DATA_OUT     8   // PA08
 #define OCP_AUX_PWR_EN        9   // PA09
+#define OCP_HEARTBEAT_LED     10  // PA19 HACK: temporary LED between UART pins 1 & 3
 
 #define MCU_SDA               11  // PA16
 #define MCU_SCL               12  // PA17
@@ -40,7 +41,7 @@
 #define P3_LINKA_N            18  // PB09
 
 #define P3_LED_ACT_N          20  // PA06
-#define LINK_ACT_2            21  // PA07
+#define ATX_PWR_OK            21  // PA07
 
 #define OCP_PRSNTB0_N         24  // PA18
 
@@ -54,7 +55,7 @@
 #define TEMP_WARN             34  // PA00
 #define TEMP_CRIT             35  // PA01
 
-// ANSI terminal escape sequence
+// ANSI terminal escape sequences
 #define CLR_SCREEN()                terminalOut((char *) "\x1b[2J")
 #define CLR_LINE()                  terminalOut((char *) "\x1b[0K")
 #define SHOW()                      terminalOut(outBfr)
