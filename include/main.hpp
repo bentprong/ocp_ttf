@@ -23,7 +23,7 @@
 
 #define OCP_PRSNTB1_N         4   // PB10
 #define P1_LINKA_N            5   // PB11
-#define OCP_PWR_GOOD_JMP      6   // PA20 HACK: PWR_GOOD_LED to UART connector pin 2
+#define NIC_PWR_GOOD_JMP      6   // PA20 HACK: PWR_GOOD_LED to UART connector pin 2
 #define SCAN_VER_0            7   // PA21
 
 #define OCP_SCAN_DATA_OUT     8   // PA08
@@ -36,14 +36,20 @@
 
 #define OCP_PWRBRK_N          14  // PB22
 
+#define BOARD_ID_0            15  // PA02   // TODO
+
 #define OCP_PRSNTB3_N         16  // PB02
 #define FAN_ON_AUX            17  // PB08
 #define P3_LINKA_N            18  // PB09
+
+#define BOARD_ID_1            19  // PA05   // TODO
 
 #define P3_LED_ACT_N          20  // PA06
 #define ATX_PWR_OK            21  // PA07
 
 #define OCP_PRSNTB0_N         24  // PA18
+
+#define BOARD_ID_2            25  // PA03   // TODO
 
 #define OCP_PRSNTB2_N         28  // PA14
 #define SCAN_VER_1            29  // PA15

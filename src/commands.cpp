@@ -50,7 +50,12 @@ extern volatile uint32_t    scanShiftRegister_0;
   {              NCSI_RST_N, OUTPUT,    ACT_LO, "NCSI_RST_N"},
   {            OCP_SCAN_CLK, OUTPUT,    ACT_LO, "SCAN_CLK"},
   {       OCP_HEARTBEAT_LED, OUTPUT,    ACT_LO, "HEARTBEAT"},         // HACK: temporary LED between UART pins 1 & 3
-  {        OCP_PWR_GOOD_JMP, INPUT,     ACT_HI, "OCP_PWR_GOOD"},      // HACK: PWR_GOOD_LED to UART connector pin 2
+  {        NIC_PWR_GOOD_JMP, INPUT,     ACT_HI, "OCP_PWR_GOOD"},      // HACK: PWR_GOOD_LED to UART connector pin 2
+
+  // TODO finalize these pins
+  {              BOARD_ID_0, INPUT_PULLDOWN, ACT_HI, "BOARD_ID_0"},
+  {              BOARD_ID_1, INPUT_PULLDOWN, ACT_HI, "BOARD_ID_1"},
+  {              BOARD_ID_2, INPUT_PULLDOWN, ACT_HI, "BOARD_ID_2"},
 };
 
 uint16_t      static_pin_count = sizeof(staticPins) / sizeof(pin_mgt_t);
