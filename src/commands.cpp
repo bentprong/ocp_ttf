@@ -26,9 +26,9 @@ extern volatile uint32_t    scanShiftRegister_0;
 // NOTE: The order of the entries in this table is the order they are displayed by the
 // 'pins' command. There is no other signficance to the order.
  const pin_mgt_t     staticPins[] = {
-  {               TEMP_WARN, OUTPUT,    ACT_HI, "TEMP_WARN"},
-  {               TEMP_CRIT, OUTPUT,    ACT_HI, "TEMP_CRIT"},
-  {              FAN_ON_AUX, OUTPUT,    ACT_HI, "FAN_ON_AUX"},
+  {               TEMP_WARN, INPUT,     ACT_HI, "TEMP_WARN"},
+  {               TEMP_CRIT, INPUT,     ACT_HI, "TEMP_CRIT"},
+  {              FAN_ON_AUX, INPUT,     ACT_HI, "FAN_ON_AUX"},
   {           OCP_SCAN_LD_N, OUTPUT,    ACT_LO, "SCAN_LD_N"},
   {         OCP_MAIN_PWR_EN, OUTPUT,    ACT_HI, "MAIN_EN"},
   {          OCP_AUX_PWR_EN, OUTPUT,    ACT_HI, "AUX_EN"},
@@ -152,13 +152,15 @@ void configureIOPins(void)
 /**
   * @name   readPin
   * @brief  wrapper to digitalRead via pinStates[]
-  * @param  None
-  * @retval None
+  * @param  pinNo   Arduino pin # to read
+  * @retval bool    pin state
   */
 bool readPin(uint8_t pinNo)
 {
     uint8_t         index = getPinIndex(pinNo);
 
+    // if requested pin is an input, read that pin; else the
+    // latest value written will be in pinStates[]
     if ( staticPins[index].pinFunc == INPUT )
         pinStates[index] = digitalRead((pin_size_t) pinNo);
 
@@ -174,15 +176,16 @@ bool readPin(uint8_t pinNo)
   */
 void writePin(uint8_t pinNo, uint8_t value)
 {
-    value = (value == 0) ? 0 : 1;
+    value = (value == 0) ? 0 : 1;           // force value to boolean
     digitalWrite(pinNo, value);
-    pinStates[getPinIndex(pinNo)] = (bool) value;
+    pinStates[getPinIndex(pinNo)] = value;
 }
 
 /**
   * @name   readCmd
   * @brief  read an I/O pin
-  * @param  arg 1 = Arduino pin #
+  * @param  arg not used
+  * @param  tokens[1] = Arduino pin #
   * @retval 0=OK 1=pin # not found
   * @note   displays pin info
   */
@@ -665,7 +668,7 @@ int pwrCmd(int argCnt)
     bool            isPowered = false;
     uint8_t         mainPin = readPin(OCP_MAIN_PWR_EN);
     uint8_t         auxPin = readPin(OCP_AUX_PWR_EN);
-    uint8_t         pwrGoodPin = readPin(OCP_PWR_GOOD_JMP);
+    uint8_t         pwrGoodPin = readPin(NIC_PWR_GOOD_JMP);
 
     if ( argCnt == 0 )
     {
@@ -718,7 +721,7 @@ int pwrCmd(int argCnt)
 
                 // NIC card takes a bit of time to power up
                 delay(50);
-                if ( readPin(OCP_PWR_GOOD_JMP) )
+                if ( readPin(NIC_PWR_GOOD_JMP) )
                     terminalOut((char *) "Power up sequence complete");
                 else
                 {
@@ -781,7 +784,7 @@ int pwrCmd(int argCnt)
                 writePin(OCP_MAIN_PWR_EN, 0);
                 writePin(OCP_AUX_PWR_EN, 0);
                 delay(100);
-                if ( readPin(OCP_PWR_GOOD_JMP) == 0 )
+                if ( readPin(NIC_PWR_GOOD_JMP) == 0 )
                     terminalOut((char *) "Power down sequence complete");
                 else
                     terminalOut((char *) "Power down failed; NIC_PWR_GOOD = 1");

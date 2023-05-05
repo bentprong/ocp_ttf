@@ -73,7 +73,7 @@
                 "USBCON",
                 "USB_VID=0x03EB",
                 "USB_PID=0x2111",
-                "USB_PRODUCT=\"Dell OCP TTF\"",
+                "USB_PRODUCT=\"OCP TTF\"",
                 "USB_MANUFACTURER=\"Atmel\"",
                 "ARDUINO_ARCH_SAMD",
                 ""
