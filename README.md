@@ -1,22 +1,40 @@
-# OCP NIC 3.0 Thermal Test Fixture
-Written by Richard Lewis for Fusion Manufacturing Services; author contact:
-    rick@fmspcb.com
-    rlewis@astlenterprises.com
+# OCP NIC 3.0 Thermal Test Fixture (TTF)
+Written by Richard Lewis (rick@fmspcb.com) for Fusion Manufacturing Services.
+    
 Posted February 18, 2023 at [GitHub](https://github.com/bentprong/ocp_ttf)
 Initial Firmware Release: v1.0.5 (March 9, 2023)
 
-## Release v1.0.7 Notes (April 15, 2023)
+## Release v1.0.9 (May 8, 2023)
+1. Fixed issue #16 USB/serial lockup with Windows/TeraTerm.  Updated Terminal Instructions below. Added info
+on board rev X07 wrt to heartbeat LED behavior. On X06 boards there is no visual status due to no LED. This
+fix also involved including USBCore.cpp from a library and that file now generates a warning that can be
+ignored. It simply verifies that the file is being compiled as it should be and not the library file. It is a
+good idea after pulling a new release to check the TERMINAL window after a build to make sure this warning is present:
+    src/USBCore.cpp:32:2: warning: #warning Using expected USBCore.cpp with OCP modifications [-Wcpp]
+2. Added scan chain capabilities. New 'scan' command and also on powering up NIC 3.0 card via 'power' command.
+3. Two modifications to board rev X07 use P_UART1 connector: (1) LED between pins 1-3 (2) jumper from P_UART1 pin 2
+to pin 1 of DS_3P3AUX1 (LED) to provide temporary NIC_PWR_GOOD_JMP input pin. NOTE: If this jumper is not installed
+the power command will not function correctly and/or give erroneous status. Also the pins command and the status
+command will show a pin state that may not be correct if the jumper is not installed.
+4. Fixed pin direction for TEMP_WARN, TEMP_CRIT and FAN_ON_AUX signals (schematic is wrong)
+5. Added 3 board ID input pins, currently not implemented in hardware (coming soon).  These pins are internally
+pulled down. To change the board ID (aka revision) the 0th bit pin would be pulled high.   Bo
+6. Fixed uncaught potential serial buffer overflow (no issue created for this, fixed-on-the-fly)
+
+## Release v1.0.8 Notes (April 15, 2023)
 1. Changed power command to show help if no argument provided; added 'aux', 'main' and 'card' options to allow
 individual signals MAIN_EN and AUX_EN to be set or 'card' sets both as before
 2. Changed eeprom command to require a subcommand (show or dump); if no subcommand, it shows help.
 3. Changed set command to show current parameter values and help if no argument is provided
-4. Added EEPROM_DEBUG flag to eeprom.c to allow developers to select hex dumps of key EEPROM regions (not user)
+4. Added EEPROM_DEBUG flag to eeprom.c to allow developers to select hex dumps of key EEPROM regions
 5. Added vers command to display firmware version and build date/time
 6. Improved exception handling and user error messages
 7. Changed 'EEPROM' when referring to simulated FLASH EEPROM to 'FLASH' to avoid confusion
 8. Changed debug command to xdebug and moved to the bottom of the help display
-9. Added function stub for upcoming scan chain query; currently shows info not available
+9. Added function stub for upcoming scan chain query; currently shows 'info not available'
 10. Fixed several previously-uncaught exception bugs
+
+## Release v1.0.7 (Internal testing only)
 
 ## Release v1.0.6 Notes (April 12, 2023)
 1. Removed "Dell" everywhere, replaced with "OCP"
@@ -138,9 +156,19 @@ A third LED may be lit if a NIC 3.0 board is inserted into the bay and the power
 This is the OCP_PWR_GOOD LED.  UPDATE: The NIC 3.0 board is now no longer powered up when the TTF
 board is powered up.  Use the 'power' command to power up the NIC 3.0 board.
 
+On TTF board rev X07 and higher, a heartbeat LED is also present.  When the board is powered up, this
+LED will be on solid.  Once initialization is complete and a serial connection established with a host
+computer, the LED will blink slowly to indicate that the firmware is operational.
+
 ## Build/Debug Instructions
 In VSC, click Run | Start Debugging.  The code will be built for debug and you should see the debugger
 stop in main() at the init() call.   Click the blue |> icon in the debugger control area of VSC.
+
+NOTE: Sometimes when using the debugger, the serial over USB does not immediately connect.  See 
+Terminal Instructions below for more info.
+
+## Firmware Upload
+To program release firmware in VSC, click the -> in the blue bottom line of VSC.  Requires ATMEL-ICE.
 
 ## Binary Executable Instructions
 Firmware is prebuilt in GitHub and located at:
@@ -154,7 +182,11 @@ NOTE: PIO "upload" does not work because there is intentionally no bootloader on
 time, this OCP project does not support Arduino sketches.
 
 ## Building Release Firmware
-In VSC, click the checkmark in the blue line at the bottom to build a firmware release.  If no problems
+It is not necessary to build the firmware in order to use the released firmware.  In the paragraph
+below is the location of the firmware.bin file that needs to be programmed into the board using a tool
+such as Microchip Studio.
+
+To build release firmware, in VSC, click the checkmark in the blue line at the bottom.  If no problems
 are reported (there should be none), the executable is located in the local directory here:
     <home>/Projects/ocp-ttf/.pio/build/samd21g18a/firmware.bin
 
@@ -181,11 +213,33 @@ Studio, unplug the Atmel-ICE, wait a few seconds, plug the Atmel-ICE back in, th
 ---
 
 ## Terminal Instructions
-Windows: In TeraTerm, open a new serial connection on the new COM port and press ENTER. You should see
-the TTF welcome message and TTF prompt ttf> in the TeraTerm window.  Hint: The description of the new
-COM port will include "OCP" if that COM port is assigned to the TTF board.
+Serial over USB does not require any of the traditional UART parameters such as baud rate. However,
+many terminal programs do require this, so use 115200 in all tools.
 
-Mac: Get a listing of TTYs like this:
+### Windows
+It is helpful to have Device Manager ("DM") open and the Ports (COM & LPT) section expanded.  When first
+plugging the TTF board into a Windows computer and powering up TTF, a new COM port will be enumerated 
+for the serial terminal on TTF.   There is often an Intel(R) Active Management Technology - SOL (COMn) 
+port already showing in DM that is NOT the COM port for TTF.
+
+Once you see the COM port in DM, open TeraTerm, then start a new serial connection on the new COM port. 
+You should see the TTF welcome message and TTF prompt ttf> in the TeraTerm window.  
+
+If the board is powered down, you must close TeraTerm. After the board is powered back up, 
+and the COM port is shown in DM, re-open TeraTerm and start a new connection.  
+
+The reset button on TTF will not reliably re-establish a serial connection.
+
+For board Rev X06 there is no visual indication of firmware status.  If in doubt about the serial
+connection, press the ENTER key a few times in TeraTerm.  That should display the prompt.  If the
+prompt doesn't appear, close TeraTerm, power cycle TTF, then open TeraTerm and try again.
+
+For board Rev X07, the heartbeat LED will be on solid while firmware is initializing and waiting
+for a serial connection to TeraTerm.  Once the serial over USB connection is established, the LED 
+will start  blinking slowly and the welcome message and prompt will appear in the TeraTerm window.
+
+### Mac
+Get a listing of TTYs like this:
     user@computer ~ % ls -l /dev/tty.usb*
     crw-rw-rw-  1 root  wheel    9,   2 Jan 17 14:02 /dev/tty.usbmodem146201 
 
@@ -193,10 +247,15 @@ Enter "screen /dev/tty.usbmodem146201 115200" (or whatever the output of the ls 
 and you should see the TTF welcome message and TTF prompt ttf> in the terminal window.  While the
 baud rate of 115200 doesn't apply to serial over USB, it is required by the screen command.
 
-Linux (eg Ubuntu): You can install screen or minicom using apt.  For screen, use the ls command
+### Linux (eg Ubuntu)
+You can install 'screen' or 'minicom' using apt.  For screen, use the ls command
 as shown in the Mac section above to find the USBn device, then enter the command:
-"screen /dev/ttyUSB0 115200" if the connection is on ttyUSB0.  For minicom, please search online
-for a tutorial on installation and usage.
+"screen /dev/ttyUSB0 115200" for example if the connection is on ttyUSB0.  
+
+For minicom, please search online for a tutorial on installation and usage.
+
+For Mac and Linux, if TTF is powered down, you will see the connection drop in screen.  After the
+board is powered back up, use up arrow or enter the same command used to start the connection.
 
 ## Issues
 See:

@@ -4,7 +4,9 @@
 // Contains setup() initialization and main program loop() for an
 // OCP Project that uses SAMD21G18A.  This file and the 2
 // functions contained in it are generic.  See cli.cpp and commands.cpp
-// for project-specific code.
+// for project-specific code. 
+// Update 5/6/2023 - some project-specific GPIO pins are now in this
+// file unfortunately.
 //===================================================================
 #include <Arduino.h>
 #include "main.hpp"
@@ -21,6 +23,9 @@ void timers_Init(void);
 #define FAST_BLINK_DELAY            200
 #define SLOW_BLINK_DELAY            1000
 
+uint8_t         boardIDpins;        // or'd BOARD_ID_bits 2..1
+uint8_t         boardIDReal;        // adjusted to align with X06 =  6, X07 = 6 etc
+
 /**
   * @name   setup
   * @brief  system initialization
@@ -29,20 +34,12 @@ void timers_Init(void);
   */
 void setup() 
 {
-  bool        LEDstate = false;
-
-  Wire.begin();
-  //  Wire.setClock(400000);
-
-  // configure heartbeat LED pin and turn on which indicates that the
-  // board is being initialized (not much initialization to do!)
-  // NOTE: LED is active low.
-  //pinMode(PIN_LED, OUTPUT);
-  //digitalWrite(PIN_LED, LEDstate);
-
   // configure I/O pins and read all inputs
+  // into pinStates[]
   // NOTE: Output pins will be 0 initially
+  // then updated on any writePin()
   configureIOPins();
+  digitalWrite(OCP_HEARTBEAT_LED, LOW);
   readAllPins();
 
   // disable main & aux power to NIC 3.0 card
@@ -52,64 +49,66 @@ void setup()
   // deassert PHY reset
   writePin(NCSI_RST_N, 1);
 
-  // init simulated EEPROM
-  EEPROM_InitLocal();
+  // get board ID: X06 = 6 because all 3 ID pins should be low (0) + base value of 6 (X06)
+  boardIDpins = (readPin(BOARD_ID_2) << 2) | (readPin(BOARD_ID_1) << 1) | readPin(BOARD_ID_0);
+  boardIDReal = X06_VALUE + boardIDpins;
 
-  // start serial over USB and wait for a connection
-  // NOTE: Baud rate isn't applicable to USB...
-  // NOTE: Many libraries won't init unless Serial
-  // is running (or in this case SerialUSB). In the
-  // variants.h file Serial is supposed to be
-  // redirected to SerialUSB but that isn't working
-  SerialUSB.begin(115200);
-  while ( !SerialUSB )
-  {
-      // fast blink while waiting for a connection
-      LEDstate = LEDstate ? 0 : 1;
-      digitalWrite(PIN_LED, LEDstate);
-      delay(FAST_BLINK_DELAY);
-  }
-
+  // initialize timer used for scan chain clock
   timers_Init();
-  doHello();
-  doPrompt();
+
+  // Start serial interface
+  // NOTE: Baud rate isn't applicable to USB...
+  // NOTE: No wait here, loop() does that
+  SerialUSB.begin(115200);
+
+  // start I2C interface
+  Wire.begin();
 
 } // setup()
 
-//===================================================================
-//                     loop() - Main Program Loop
-//
-// FLASHING NOTE: loop() doesn't get called until USB-serial connection
-// has been established (ie, SerialUSB = 1).
-//
-// This loop does two things: blink the heartbeat LED and handle
-// incoming characters over SerialUSB connection.  Once a full CR
-// terminated input line has been received, it calls the CLI to
-// parse and execute any valid command, or sends an error message.
-//===================================================================
 /**
   * @name   loop
   * @brief  main program loop
   * @param  None
   * @retval None
-  * @note   see comment block for more info
+  * @note   blink heartbeat LED & handle incoming characters over SerialUSB connection
   */
 void loop() 
 {
   int             byteIn;
-  static char     inBfr[80];
+  static char     inBfr[MAX_LINE_SZ];
   static int      inCharCount = 0;
   static char     lastCmd[80] = "help";
   const char      bs[4] = {0x1b, '[', '1', 'D'};  // terminal: backspace seq
   static bool     LEDstate = false;
   static uint32_t time = millis();
+  static bool     isFirstTime = true;
 
-  // blink heartbeat LED
-  if ( millis() - time >= SLOW_BLINK_DELAY )
+  if ( isFirstTime )
   {
-      time = millis();
-      LEDstate = LEDstate ? 0 : 1;
-      digitalWrite(PIN_LED, LEDstate);
+    if ( SerialUSB )
+    {
+        doHello();
+        EEPROM_InitLocal();
+        terminalOut((char *) "Press ENTER if prompt is not shown");
+        doPrompt();
+        isFirstTime = false;
+    }
+    else
+    {
+        delay(1000);
+        return;
+    }
+  }
+  else
+  {
+        // blink heartbeat LED
+        if ( millis() - time >= SLOW_BLINK_DELAY )
+        {
+            time = millis();
+            LEDstate = LEDstate ? 0 : 1;
+            digitalWrite(OCP_HEARTBEAT_LED, LEDstate);
+        }
   }
 
   // process incoming serial over USB characters
@@ -175,7 +174,16 @@ void loop()
         // all other keys get echoed & stored in buffer
         SerialUSB.write((char) byteIn);
         SerialUSB.flush();
-        inBfr[inCharCount++] = byteIn;
+        inBfr[inCharCount] = byteIn;
+        if ( inCharCount < (MAX_LINE_SZ-1) )
+        {
+            inCharCount++;
+        }
+        else
+        {
+            terminalOut((char *) "Serial input buffer overflow!");
+            inCharCount = 0;
+        }
     }
   }
 
