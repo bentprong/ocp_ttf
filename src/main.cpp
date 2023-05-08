@@ -4,7 +4,9 @@
 // Contains setup() initialization and main program loop() for an
 // OCP Project that uses SAMD21G18A.  This file and the 2
 // functions contained in it are generic.  See cli.cpp and commands.cpp
-// for project-specific code.
+// for project-specific code. 
+// Update 5/6/2023 - some project-specific GPIO pins are now in this
+// file unfortunately.
 //===================================================================
 #include <Arduino.h>
 #include "main.hpp"
@@ -21,8 +23,8 @@ void timers_Init(void);
 #define FAST_BLINK_DELAY            200
 #define SLOW_BLINK_DELAY            1000
 
-uint8_t         boardID;            // or'd BOARD_ID_bits 2..1
-uint8_t         boardIDReal;        // adjust to align with X06+
+uint8_t         boardIDpins;        // or'd BOARD_ID_bits 2..1
+uint8_t         boardIDReal;        // adjusted to align with X06 =  6, X07 = 6 etc
 
 /**
   * @name   setup
@@ -32,25 +34,13 @@ uint8_t         boardIDReal;        // adjust to align with X06+
   */
 void setup() 
 {
-  uint16_t    counter = 20;
-
-  Wire.begin();
-
   // configure I/O pins and read all inputs
   // into pinStates[]
   // NOTE: Output pins will be 0 initially
   // then updated on any writePin()
   configureIOPins();
-  readAllPins();
-
-  // board ID: X06 = 6 because all 3 ID pins should be low (0)
-  boardID = (readPin(BOARD_ID_2) << 2) | (readPin(BOARD_ID_1) << 1) | readPin(BOARD_ID_0);
-  boardIDReal = X06_VALUE + boardID;
-
-  // turn on heartbeat LED, which indicates that the
-  // board is being initialized
-  // NOTE: LED pin is configured with other pins
   digitalWrite(OCP_HEARTBEAT_LED, LOW);
+  readAllPins();
 
   // disable main & aux power to NIC 3.0 card
   writePin(OCP_MAIN_PWR_EN, 0);
@@ -59,31 +49,20 @@ void setup()
   // deassert PHY reset
   writePin(NCSI_RST_N, 1);
 
-  // init simulated EEPROM
-  EEPROM_InitLocal();
+  // get board ID: X06 = 6 because all 3 ID pins should be low (0) + base value of 6 (X06)
+  boardIDpins = (readPin(BOARD_ID_2) << 2) | (readPin(BOARD_ID_1) << 1) | readPin(BOARD_ID_0);
+  boardIDReal = X06_VALUE + boardIDpins;
 
-  // start serial over USB and wait for a connection
-  // NOTE: Baud rate isn't applicable to USB...
-  SerialUSB.begin(115200);
-  while ( !SerialUSB )
-  {
-      delay(FAST_BLINK_DELAY);
-  }
-
-  // begin issue #16 fix ------------------------------------
-  // set LED on, close the USB connection because TeraTerm
-  // won't reset properly; wait, then re-open the USB 
-  // connection. This is a Windows-  // only issue but 
-  // works on Mac as well.
-  SerialUSB.end();
-  delay(2000);
-
-  // reconnect but don't wait for it; any output created
-  // next will get queued and output in order
-  SerialUSB.begin(115200);
-  // end issue #16 fix ------------------------------------
-
+  // initialize timer used for scan chain clock
   timers_Init();
+
+  // Start serial interface
+  // NOTE: Baud rate isn't applicable to USB...
+  // NOTE: No wait here, loop() does that
+  SerialUSB.begin(115200);
+
+  // start I2C interface
+  Wire.begin();
 
 } // setup()
 
@@ -105,20 +84,31 @@ void loop()
   static uint32_t time = millis();
   static bool     isFirstTime = true;
 
-  // output greeting and prompt
   if ( isFirstTime )
   {
-    isFirstTime = false;
-    doHello();
-    doPrompt();
+    if ( SerialUSB )
+    {
+        doHello();
+        EEPROM_InitLocal();
+        terminalOut((char *) "Press ENTER if prompt is not shown");
+        doPrompt();
+        isFirstTime = false;
+    }
+    else
+    {
+        delay(1000);
+        return;
+    }
   }
-
-  // blink heartbeat LED
-  if ( millis() - time >= SLOW_BLINK_DELAY )
+  else
   {
-      time = millis();
-      LEDstate = LEDstate ? 0 : 1;
-      digitalWrite(OCP_HEARTBEAT_LED, LEDstate);
+        // blink heartbeat LED
+        if ( millis() - time >= SLOW_BLINK_DELAY )
+        {
+            time = millis();
+            LEDstate = LEDstate ? 0 : 1;
+            digitalWrite(OCP_HEARTBEAT_LED, LEDstate);
+        }
   }
 
   // process incoming serial over USB characters

@@ -504,7 +504,10 @@ uint32_t USBDeviceClass::recvControl(void *_data, uint32_t len)
 	uint32_t read = armRecvCtrlOUT(0);
 	if (read > len)
 		read = len;
+
+	// prototype differs from inline function
 	//while (!usbd.epBank0AckTransferComplete(0)) {}
+
 	uint8_t *buffer = udd_ep_out_cache_buffer[0];
 	for (uint32_t i=0; i<len; i++) {
 		data[i] = buffer[i];

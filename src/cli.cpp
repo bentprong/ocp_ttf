@@ -130,7 +130,7 @@ void doPrompt(void)
   */
 void doHello(void)
 {
-    sprintf(outBfr, "%s%s Board Rev X%02d", hello, VERSION_ID, boardIDReal);
+    sprintf(outBfr, "\r\n%s%s Board Rev X%02d", hello, VERSION_ID, boardIDReal);
     terminalOut(outBfr);
 }
 

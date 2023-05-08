@@ -4,12 +4,13 @@ Written by Richard Lewis (rick@fmspcb.com) for Fusion Manufacturing Services.
 Posted February 18, 2023 at [GitHub](https://github.com/bentprong/ocp_ttf)
 Initial Firmware Release: v1.0.5 (March 9, 2023)
 
-## Release v1.0.9 (May 5, 2023)
+## Release v1.0.9 (May 8, 2023)
 1. Fixed issue #16 USB/serial lockup with Windows/TeraTerm.  Updated Terminal Instructions below. Added info
 on board rev X07 wrt to heartbeat LED behavior. On X06 boards there is no visual status due to no LED. This
 fix also involved including USBCore.cpp from a library and that file now generates a warning that can be
 ignored. It simply verifies that the file is being compiled as it should be and not the library file. It is a
-good idea after pulling a new release to check the TERMINAL window after a build to make sure this warning is there.
+good idea after pulling a new release to check the TERMINAL window after a build to make sure this warning is present:
+    src/USBCore.cpp:32:2: warning: #warning Using expected USBCore.cpp with OCP modifications [-Wcpp]
 2. Added scan chain capabilities. New 'scan' command and also on powering up NIC 3.0 card via 'power' command.
 3. Two modifications to board rev X07 use P_UART1 connector: (1) LED between pins 1-3 (2) jumper from P_UART1 pin 2
 to pin 1 of DS_3P3AUX1 (LED) to provide temporary NIC_PWR_GOOD_JMP input pin. NOTE: If this jumper is not installed
@@ -163,6 +164,12 @@ computer, the LED will blink slowly to indicate that the firmware is operational
 In VSC, click Run | Start Debugging.  The code will be built for debug and you should see the debugger
 stop in main() at the init() call.   Click the blue |> icon in the debugger control area of VSC.
 
+NOTE: Sometimes when using the debugger, the serial over USB does not immediately connect.  See 
+Terminal Instructions below for more info.
+
+## Firmware Upload
+To program release firmware in VSC, click the -> in the blue bottom line of VSC.  Requires ATMEL-ICE.
+
 ## Binary Executable Instructions
 Firmware is prebuilt in GitHub and located at:
     bentprong/ocp_ttf/.pio/build/samd21g18a/firmware.bin
@@ -211,22 +218,24 @@ many terminal programs do require this, so use 115200 in all tools.
 
 ### Windows
 It is helpful to have Device Manager ("DM") open and the Ports (COM & LPT) section expanded.  When first
-plugging the TTF board into a Windows computer, a new COM port will be enumerated for the serial
-terminal on TTF.   If an ATMEL-ICE is connected to the TTF board, another COM port may exist that is 
-not accessible for the user interface.
+plugging the TTF board into a Windows computer and powering up TTF, a new COM port will be enumerated 
+for the serial terminal on TTF.   There is often an Intel(R) Active Management Technology - SOL (COMn) 
+port already showing in DM that is NOT the COM port for TTF.
 
-In TeraTerm, open a new serial connection on the new COM port and press ENTER. You should see
-the TTF welcome message and TTF prompt ttf> in the TeraTerm window.  Hint: The description of the new
-COM port will include "OCP" if that COM port is assigned to the TTF board.
+Once you see the COM port in DM, open TeraTerm, then start a new serial connection on the new COM port. 
+You should see the TTF welcome message and TTF prompt ttf> in the TeraTerm window.  
 
-If the board is powered down with TeraTerm left open, then powered back up, it may take 60 seconds
-for TeraTerm to reconnect to the board even after Windows DM shows the COM port.  This is believed
-to be a TeraTerm issue but that hasn't been proven.
+If the board is powered down, you must close TeraTerm. After the board is powered back up, 
+and the COM port is shown in DM, re-open TeraTerm and start a new connection.  
+
+The reset button on TTF will not reliably re-establish a serial connection.
 
 For board Rev X06 there is no visual indication of firmware status.  If in doubt about the serial
-connection, press the ENTER key a few times in TeraTerm.
+connection, press the ENTER key a few times in TeraTerm.  That should display the prompt.  If the
+prompt doesn't appear, close TeraTerm, power cycle TTF, then open TeraTerm and try again.
 
-For board Rev X07, the heartbeat LED will be on solid during this time. Once the connection is established, the LED
+For board Rev X07, the heartbeat LED will be on solid while firmware is initializing and waiting
+for a serial connection to TeraTerm.  Once the serial over USB connection is established, the LED 
 will start  blinking slowly and the welcome message and prompt will appear in the TeraTerm window.
 
 ### Mac
@@ -241,9 +250,12 @@ baud rate of 115200 doesn't apply to serial over USB, it is required by the scre
 ### Linux (eg Ubuntu)
 You can install 'screen' or 'minicom' using apt.  For screen, use the ls command
 as shown in the Mac section above to find the USBn device, then enter the command:
-"screen /dev/ttyUSB0 115200" if the connection is on ttyUSB0.  
+"screen /dev/ttyUSB0 115200" for example if the connection is on ttyUSB0.  
 
 For minicom, please search online for a tutorial on installation and usage.
+
+For Mac and Linux, if TTF is powered down, you will see the connection drop in screen.  After the
+board is powered back up, use up arrow or enter the same command used to start the connection.
 
 ## Issues
 See:
