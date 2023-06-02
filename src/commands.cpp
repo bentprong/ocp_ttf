@@ -24,38 +24,50 @@ extern volatile uint32_t    scanShiftRegister_0;
 // switches can be strapped to ground.  Thus, if the pin was an output and a 1 was
 // written, there would be a dead short on that pin (no resistors).
 // NOTE: The order of the entries in this table is the order they are displayed by the
-// 'pins' command. There is no other signficance to the order.
+// 'pins' command. There is no other signficance to the order.  The first entry in a
+// pair is the left column while the second entry is the right column.
  const pin_mgt_t     staticPins[] = {
   {               TEMP_WARN, INPUT,     ACT_HI, "TEMP_WARN"},
-  {               TEMP_CRIT, INPUT,     ACT_HI, "TEMP_CRIT"},
-  {              FAN_ON_AUX, INPUT,     ACT_HI, "FAN_ON_AUX"},
-  {           OCP_SCAN_LD_N, OUTPUT,    ACT_LO, "SCAN_LD_N"},
   {         OCP_MAIN_PWR_EN, OUTPUT,    ACT_HI, "MAIN_EN"},
+
+  {               TEMP_CRIT, INPUT,     ACT_HI, "TEMP_CRIT"},
   {          OCP_AUX_PWR_EN, OUTPUT,    ACT_HI, "AUX_EN"},
-  {        OCP_SCAN_DATA_IN, INPUT,     ACT_HI, "SCAN_DATA_IN"},  // "in" from NIC 3.0 card (baseboard perspective)
-  {       OCP_SCAN_DATA_OUT, OUTPUT,    ACT_HI, "SCAN_DATA_OUT"}, // "out" to NIC 3.0 card
-  {              P1_LINKA_N, INPUT,     ACT_LO, "P1_LINKA_N"},
-  {            P1_LED_ACT_N, INPUT,     ACT_LO, "P1_LED_ACT_N"},
+
+  {              FAN_ON_AUX, INPUT,     ACT_HI, "FAN_ON_AUX"},
   {              ATX_PWR_OK, INPUT,     ACT_LO, "ATX_PWR_OK"},
-  {              P3_LINKA_N, INPUT,     ACT_LO, "P3_LINKA_N"},
-  {            P3_LED_ACT_N, INPUT,     ACT_LO, "P3_LED_ACT_N"},
+
   {           OCP_PRSNTB0_N, INPUT,     ACT_LO, "PRSNTB0_N"},
-  {           OCP_PRSNTB2_N, INPUT,     ACT_LO, "PRSNTB2_N"},
-  {           OCP_PRSNTB1_N, INPUT,     ACT_LO, "PRSNTB1_N"},
-  {           OCP_PRSNTB3_N, INPUT,     ACT_LO, "PRSNTB3_N"},
   {              SCAN_VER_0, INPUT,     ACT_HI, "SCAN_VER_0"},
+
+  {           OCP_PRSNTB1_N, INPUT,     ACT_LO, "PRSNTB1_N"},
   {              SCAN_VER_1, INPUT,     ACT_HI, "SCAN_VER_1"},
+
+  {           OCP_PRSNTB2_N, INPUT,     ACT_LO, "PRSNTB2_N"},
+  {              P1_LINKA_N, INPUT,     ACT_LO, "P1_LINKA_N"},
+
+  {           OCP_PRSNTB3_N, INPUT,     ACT_LO, "PRSNTB3_N"},
+  {            P1_LED_ACT_N, INPUT,     ACT_LO, "P1_LED_ACT_N"},
+
   {              OCP_WAKE_N, INPUT,     ACT_LO, "WAKE_N"},
   {            OCP_PWRBRK_N, INPUT,     ACT_LO, "PWRBRK_N"},
-  {              NCSI_RST_N, OUTPUT,    ACT_LO, "NCSI_RST_N"},
-  {            OCP_SCAN_CLK, OUTPUT,    ACT_LO, "SCAN_CLK"},
-  {       OCP_HEARTBEAT_LED, OUTPUT,    ACT_LO, "HEARTBEAT"},         // HACK: temporary LED between UART pins 1 & 3
-  {        NIC_PWR_GOOD_JMP, INPUT,     ACT_HI, "OCP_PWR_GOOD"},      // HACK: PWR_GOOD_LED to UART connector pin 2
 
-  // TODO finalize these pins
+  {              P3_LINKA_N, INPUT,     ACT_LO, "P3_LINKA_N"},
+  {            P3_LED_ACT_N, INPUT,     ACT_LO, "P3_LED_ACT_N"},
+
   {              BOARD_ID_0, INPUT_PULLDOWN, ACT_HI, "BOARD_ID_0"},
+  {              NCSI_RST_N, OUTPUT,    ACT_LO, "NCSI_RST_N"},
+
   {              BOARD_ID_1, INPUT_PULLDOWN, ACT_HI, "BOARD_ID_1"},
+  {       OCP_HEARTBEAT_LED, OUTPUT,    ACT_LO, "HEARTBEAT_LED"},     // HACK: temporary LED between UART pins 1 & 3
+
   {              BOARD_ID_2, INPUT_PULLDOWN, ACT_HI, "BOARD_ID_2"},
+  {        NIC_PWR_GOOD_JMP, INPUT,     ACT_HI, "NIC_PWR_GOOD"},      // HACK: PWR_GOOD_LED to UART connector pin 2
+
+  {           OCP_SCAN_LD_N, OUTPUT,    ACT_LO, "SCAN_LD_N"},
+  {        OCP_SCAN_DATA_IN, INPUT,     ACT_HI, "SCAN_DATA_IN"},      // "in" from NIC 3.0 card (baseboard perspective)
+
+  {            OCP_SCAN_CLK, OUTPUT,    ACT_LO, "SCAN_CLK"},
+  {       OCP_SCAN_DATA_OUT, OUTPUT,    ACT_HI, "SCAN_DATA_OUT"},     // "out" to NIC 3.0 card
 };
 
 uint16_t      static_pin_count = sizeof(staticPins) / sizeof(pin_mgt_t);
