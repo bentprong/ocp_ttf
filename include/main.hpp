@@ -7,7 +7,7 @@
 #include <Arduino.h>
 #include "cli.hpp"
 
-#define VERSION_ID               "1.0.9"
+#define VERSION_ID               "1.1.0"
 
 #define X06_VALUE                 6
 #define BUILD_DATE                __DATE__
